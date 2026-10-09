@@ -603,7 +603,7 @@ provider the business pays** (never scraping) · **evals**: the Assistant's prop
 | plugin | `shared-schema.md` gains `accounts`, `contacts`, `contact_emails`, `activities`, `activity_participants`, `deal_products` as canonical and records the `mailboxes`/`inbound_email` reuse with the appended match columns | the planning model, in Phase 0 |
 | MaluMail | one mailbox `crm-<token>@<mail domain>` with an inbound webhook, as Help Desk's queues have | the owner, at Phase 5 |
 
-## 13. The decisions (recommendations; the owner's answers go to §15)
+## 13. The decisions (recommendations; the owner's answers are §15 — every one taken, 2026-10-09)
 
 | # | Decision | Recommendation | Alternative |
 |---|---|---|---|
@@ -659,9 +659,34 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 15. The owner's answers
 
-*Awaiting the owner's checkpoint on D1–D16 and (a)–(c).*
+**2026-10-09 — every recommendation of §13 taken, and the three open questions answered**, walked through one by one.
+
+| # | Decision | Where it lives |
+|---|---|---|
+| D1 | **"Sales CRM", key `sales_crm`, DNS label `crm`**, database `<tenant>_sales_crm`, roles `sales_crm_rw` / `_records_ro` / `_activity_ro`, prefix `crm_`; the repository keeps the name `maludb-os-sales-crm` | `maludb-os.json`; §14 |
+| D2 | **Five roles**: Viewer, Sales Rep (`user`), Marketing, Sales Manager, CRM admin; teams are the kernel's departments | §3; `crm_roles`; `app_roles` |
+| D3 | **A separate Lead object, converted** into account + contact (+ deal) in one transaction; the converted lead stays read-only, pointing at what it made; never on the board | §6.1; `docs/build-specs/leads-and-conversion.md` |
+| D4 | **The Expert acts inside and drafts out**: finds, answers, logs, creates, moves, schedules on its own; drafts an email and pauses; never deletes, merges or changes a rule | §5; `os/expert.md` |
+| D5 | **Open by default**: every role sees every record with amounts; a manager may restrict a record to its owner and a department; ownership gates editing; a seller may mark one email private | §3 |
+| D6 | **Several pipelines**, stages with probability, rotting days, required fields, ask-the-Assistant, one Won and one Lost; two seeded; a stage is a column; weighted value from the stage or an override | §6.2 |
+| D7 | **The board in Projects' shape**: the columns partial polled every 30 s, SortableJS the enhancement over `POST /deals/{deal}/move`, the four next-activity colours, rotting, column totals, Won/Lost drop targets opening the close forms; the list and the forecast as views of the same query | §6.2; `docs/build-specs/pipeline-board.md` |
+| D8 | **Server-rendered HTMX calendar grids** (month, week, day, agenda) as the cidery's schedule; `who=` me / colleague / team; drag between cells over `reschedule`; the ICS feed one-way on `calendar_feeds`; two-way sync Extended | §6.3; `docs/build-specs/activities-calendar.md` |
+| D9 | **One `activities` table** for every kind on any record; the reminder as its columns, delivered by the worker in-app + email + opt-in text; done prompts the next step; `next_activity_at` kept by trigger | §6.3 |
+| D10 | **A BCC logging mailbox at MaluMail** on Help Desk's mail tables; the matcher by address and thread; proposed leads from strangers; compose with templates and merge fields, Reply-To the mailbox; opt-outs and the unsubscribe link; IMAP and sequences Extended | §4; §6.3; slice 5 |
+| D11 | **`deal_products` lines by name with an optional provider id** through K7 pickers (Inventory's variants, the GL's items); the deal's value follows the lines when any exist; no catalog of the CRM's own | §6.2 |
+| D12 | **CSV import** up to 50,000 rows with saved mappings, dedupe policy, dry run and 24-hour rollback; **static and smart lists**; bulk actions; duplicates by email, domain, phone and trigram name with a two-column merge page | §6.1; §6.4; slices 2 and 6 |
+| D13 | **A key acts as its person** (60/min, 5,000/day); a lead-capture key creates leads only (600/day); the ICS route under `/api/v1/`; **five K7 shares** with no email bodies or notes | §8; slice 8 |
+| D14 | **Expert and Sales Assistant** hired on install; the pause list of §5; the Assistant weekdays 06:30, one note per seller and per manager, next-step proposals accepted in one click, lead qualification as a proposal | §5; `agents[]` |
+| D15 | **On request, not a default; the repository private** until the owner says | §12; the org |
+| D16 | **Ports 8191 / 8843 / 8844**, scratch 8801–8807; **the Spaces division** — the planning model builds K32, Phases 0–2, slices 1 and 2 and the exemplars (slice 3 the board, slice 4 the calendar); Sonnet 5.5 builds slices 5–9 and Phases 4–5 | §14; `CLAUDE.md` |
+| (a) | **One base currency** from settings; a deal may carry another, recorded and shown, never converted; the forecast sums the base currency and lists the others apart | §6.2; `crm_settings` |
+| (b) | **The General Ledger reads `deals_won`** (G3, owed by the GL) and proposes the customer and a draft invoice; the account shows the ledger's id and balance through `gl.customer_by_crm_account`; no cross-application action | §12; slice 8 |
+| (c) | **Help Desk matches requesters and organizations against `accounts_index` / `contacts_index` through K7, additively** (HD5, owed by Help Desk) and shows `deals_open_by_account` on a ticket; the CRM shows the account's tickets through the Help Desk's read; both keep their tables | §12; slice 1 (the Tickets tab) |
 
 ## 16. State
+
+**2026-10-09 — APPROVED the same day (§15: D1–D16 and (a)–(c), every recommendation), walked through one by one with the owner.**
+**Next:** K32 (kernel db/177, the catalog row under Sales & Service, category `crm`) → Phase 0 → Phase 1 for approval → Phase 2 → slices 1–2 → the exemplars (slices 3 and 4) → the handoff to Sonnet 5.5.
 
 **2026-10-09 — planned; awaiting the owner's decisions (§13).** The research of §0 done: the field (Salesforce, HubSpot, Pipedrive,
 Zoho, Close, Attio, Twenty), the estate surveyed in every sibling's `db/*.sql` (GL's `customers`/`party_contacts`, Help Desk's
