@@ -118,7 +118,7 @@ $groups = nav_groups();
                         </a>
                     </div>
                     <?= view('shared/app-switcher.php') ?>
-                    <div class="nxl-h-item dark-light-theme">
+                    <div class="nxl-h-item dark-light-theme d-none d-sm-flex">
                         <a href="javascript:void(0);" class="nxl-head-link me-0 dark-button"><i class="feather-moon"></i></a>
                         <a href="javascript:void(0);" class="nxl-head-link me-0 light-button" style="display:none"><i class="feather-sun"></i></a>
                     </div>
@@ -258,6 +258,16 @@ $groups = nav_groups();
             var nav = document.querySelector('nav.nxl-navigation');
             if (nav && nav.classList.contains('mob-navigation-active')) { nav.classList.remove('mob-navigation-active'); var ov = document.querySelector('.nxl-menu-overlay'); if (ov) ov.remove(); }
         });
+        // A record's tabs by anchor (slice 1): /accounts/7#account-tab-notes opens that pane — on a page load and after an HTMX navigation.
+        function showTabFromHash() {
+            var h = window.location.hash;
+            if (!h || !window.bootstrap || !bootstrap.Tab) return;
+            var link = document.querySelector('[data-bs-toggle="tab"][data-bs-target="' + h.replace(/"/g, '') + '"]');
+            if (link) { bootstrap.Tab.getOrCreateInstance(link).show(); }
+        }
+        window.addEventListener('load', showTabFromHash);
+        window.addEventListener('hashchange', showTabFromHash);
+        document.body.addEventListener('htmx:afterSettle', function (e) { if (e.detail && e.detail.target && e.detail.target.id === 'page-content') { showTabFromHash(); } });
         // A refused request (4xx) is retargeted to #flash by the server; a network failure says so.
         document.body.addEventListener('htmx:responseError', function (e) {
             var f = document.getElementById('flash');
@@ -266,6 +276,7 @@ $groups = nav_groups();
     </script>
     <script src="/assets/js/common-init.min.js"></script>
     <script src="/assets/js/record-picker.js"></script>   <!-- the record picker (design-system record-picker.md): after common-init -->
+    <script src="/assets/js/tag-editor.js"></script>      <!-- the tag editor's suggestions (slice 1) -->
     <script src="/assets/js/theme-customizer-init.min.js"></script>
 </body>
 </html>

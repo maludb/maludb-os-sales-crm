@@ -79,6 +79,58 @@ function crm_int(string $name, ?int $keep, int $min, int $max, string $label, ar
     return (int) $v;
 }
 
+/**
+ * A text field up to $max characters: $keep when left out, null when emptied (a field cleared), the trimmed text otherwise; over the limit, or
+ * empty when $required, adds a sentence to $errors naming the field.
+ */
+function crm_text(string $name, ?string $keep, int $max, string $label, array &$errors, bool $required = false): ?string
+{
+    if (!req_has($name)) {
+        return $keep;
+    }
+    $v = str_replace("\r\n", "\n", (string) req_val($name));
+    if ($v === '') {
+        if ($required) {
+            $errors[$name] = $label . ' is required.';
+            return $keep;
+        }
+        return null;
+    }
+    if (mb_strlen($v) > $max) {
+        $errors[$name] = $label . ' is up to ' . $max . ' characters.';
+        return $keep;
+    }
+    return $v;
+}
+
+/** An email address field (crm_text, then the shape): a malformed address adds a sentence naming the field. */
+function crm_email(string $name, ?string $keep, string $label, array &$errors): ?string
+{
+    $v = crm_text($name, $keep, 254, $label, $errors);
+    if ($v !== null && req_has($name) && filter_var($v, FILTER_VALIDATE_EMAIL) === false) {
+        $errors[$name] = $label . ' is not an email address.';
+        return $keep;
+    }
+    return $v === null ? null : strtolower($v);
+}
+
+/** One of a fixed set of values (a kind, a role, a band): $keep when left out, null when emptied and $nullable; anything else adds a sentence. */
+function crm_choice(string $name, ?string $keep, array $allowed, string $label, array &$errors, bool $nullable = true): ?string
+{
+    if (!req_has($name)) {
+        return $keep;
+    }
+    $v = (string) req_val($name);
+    if ($v === '' && $nullable) {
+        return null;
+    }
+    if (!in_array($v, $allowed, true)) {
+        $errors[$name] = $label . ' is one of: ' . implode(', ', $allowed) . '.';
+        return $keep;
+    }
+    return $v;
+}
+
 /** An id field naming a record of a table, or null when empty and $nullable; $keep when left out. */
 function crm_ref(PDO $pdo, string $name, ?int $keep, string $sql, string $label, array &$errors, bool $nullable = true): ?int
 {
@@ -211,10 +263,29 @@ function pg_array_literal(array $values): string
     return '{' . implode(',', array_map(static fn ($v): string => is_int($v) ? (string) $v : '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], (string) $v) . '"', $values)) . '}';
 }
 
-/** The members a record can name (a salesperson, a watch's owner, a count's counter): active, admitted, people and agents. [{member_id, display_name, member_kind}] */
-function members_for_pick(PDO $pdo): array
+/**
+ * The owner picker's source (slice 1): admitted members — people first, then agents — who hold a role here (mcp_members), by name. The picker's
+ * contract: [rows [{id, label, detail, badge?}], total, page, page_size, pages].
+ */
+function members_for_pick(PDO $pdo, string $q = '', array $params = [], int $page = 1): array
 {
-    return $pdo->query("SELECT m.id AS member_id, m.display_name, m.member_kind FROM members m WHERE m.status = 'active' AND m.capability IS NOT NULL ORDER BY m.member_kind, m.display_name")->fetchAll();
+    $size = 20;
+    $st = $pdo->prepare("SELECT member_id, display_name, member_kind, job_title, roles_resolved::text AS roles, count(*) OVER () AS total FROM mcp_members
+                          WHERE (:q = '' OR display_name ILIKE '%' || :q || '%' OR email ILIKE '%' || :q || '%')
+                          ORDER BY (member_kind <> 'human'), display_name LIMIT :l OFFSET :o");
+    $st->bindValue('q', $q);
+    $st->bindValue('l', $size, PDO::PARAM_INT);
+    $st->bindValue('o', (max(1, $page) - 1) * $size, PDO::PARAM_INT);
+    $st->execute();
+    $rows = $st->fetchAll();
+    $words = ['admin' => 'CRM admin', 'manager' => 'Sales Manager', 'marketing' => 'Marketing', 'user' => 'Sales Rep', 'viewer' => 'Viewer'];
+    $total = $rows === [] ? 0 : (int) $rows[0]['total'];
+    return ['rows' => array_map(static function (array $r) use ($words): array {
+        $roles = pg_text_array((string) $r['roles']);
+        $top = null;
+        foreach (array_keys($words) as $k) { if (in_array($k, $roles, true)) { $top = $words[$k]; break; } }
+        return ['id' => (int) $r['member_id'], 'label' => $r['display_name'], 'detail' => $r['member_kind'] === 'human' ? (string) ($r['job_title'] ?? '') : 'an agent', 'badge' => $top, 'color' => $r['member_kind'] === 'human' ? 'secondary' : 'info'];
+    }, $rows), 'total' => $total, 'page' => max(1, $page), 'page_size' => $size, 'pages' => max(1, (int) ceil($total / $size))];
 }
 
 /** The live departments of the mirror. [{department_id, name}] */

@@ -1,0 +1,3 @@
+<?php /** Notes & files. Data: c, notes, files, may, me, tz, max_mb */ $cid = (int) $c['contact_id']; $back = '/contacts/' . $cid . '?tab=notes'; ?>
+<div class="row g-3"><div class="col-lg-7"><?= view('shared/notes-panel.php', ['kind' => 'contact', 'id' => $cid, 'notes' => $notes, 'may' => ['add' => $may['note'], 'delete_any' => $may['manager']], 'me' => $me, 'tz' => $tz, 'back' => $back]) ?></div>
+<div class="col-lg-5"><?= view('shared/attachments-panel.php', ['kind' => 'contact', 'id' => $cid, 'files' => $files, 'may' => ['add' => $may['edit'], 'delete_any' => $may['manager']], 'me' => $me, 'tz' => $tz, 'back' => $back, 'max_mb' => $max_mb]) ?></div></div>

@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-09T20:27:13+00:00",
+    "generated_at": "2026-10-09T21:33:43+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -74,8 +74,8 @@
                 "untouched_days",
                 "view"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "account-view": {
             "screen": "account-view",
@@ -85,7 +85,7 @@
             "params": [
                 "tab"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "account-add": {
@@ -97,7 +97,7 @@
                 "name",
                 "domain"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "account-edit": {
@@ -106,7 +106,7 @@
             "section": "Accounts and contacts (slice 1)",
             "when": "to change an account's fields, kind (partner, other, former by hand), owner, parent, the restriction (managers)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "contact-list": {
@@ -125,8 +125,8 @@
                 "untouched_days",
                 "view"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "contact-view": {
             "screen": "contact-view",
@@ -136,7 +136,7 @@
             "params": [
                 "tab"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "contact-add": {
@@ -150,7 +150,7 @@
                 "first_name",
                 "last_name"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "contact-edit": {
@@ -159,7 +159,7 @@
             "section": "Accounts and contacts (slice 1)",
             "when": "to change a contact's fields, account, role, primary flag, opt-outs, the restriction (managers)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "lead-list": {
@@ -1352,7 +1352,7 @@
             "who": "accounts.write",
             "agent": true,
             "record_id": "the account",
-            "built": false
+            "built": true
         },
         "account_update": {
             "action": "account_update",
@@ -1505,7 +1505,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the account",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "contact_create": {
@@ -1659,7 +1659,7 @@
             "who": "contacts.write",
             "agent": true,
             "record_id": "the contact",
-            "built": false
+            "built": true
         },
         "contact_update": {
             "action": "contact_update",
@@ -1818,7 +1818,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the contact",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "contact_set_primary": {
@@ -1840,7 +1840,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the contact",
-            "built": false
+            "built": true
         },
         "contact_opt_out": {
             "action": "contact_opt_out",
@@ -1879,7 +1879,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the contact",
-            "built": false
+            "built": true
         },
         "record_restrict": {
             "action": "record_restrict",
@@ -1924,7 +1924,7 @@
             "who": "records.restrict",
             "agent": true,
             "record_id": "the record",
-            "built": false
+            "built": true
         },
         "record_delete": {
             "action": "record_delete",
@@ -1951,7 +1951,7 @@
             "who": "edit (a manager for an account with deals)",
             "agent": true,
             "record_id": "the record",
-            "built": false
+            "built": true
         },
         "record_restore": {
             "action": "record_restore",
@@ -1978,7 +1978,7 @@
             "who": "own or deals.any",
             "agent": true,
             "record_id": "the record",
-            "built": false
+            "built": true
         },
         "note_add": {
             "action": "note_add",
@@ -2011,7 +2011,7 @@
             "who": "see",
             "agent": true,
             "record_id": "the note",
-            "built": false
+            "built": true
         },
         "note_delete": {
             "action": "note_delete",
@@ -2032,7 +2032,7 @@
             "who": "own or deals.any",
             "agent": true,
             "record_id": "the note",
-            "built": false
+            "built": true
         },
         "attachment_add": {
             "action": "attachment_add",
@@ -2065,7 +2065,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the attachment",
-            "built": false
+            "built": true
         },
         "attachment_delete": {
             "action": "attachment_delete",
@@ -2086,7 +2086,7 @@
             "who": "own or deals.any",
             "agent": true,
             "record_id": "the attachment",
-            "built": false
+            "built": true
         },
         "tag_apply": {
             "action": "tag_apply",
@@ -2125,7 +2125,7 @@
             "who": "tags.apply and edit",
             "agent": true,
             "record_id": "the record",
-            "built": false
+            "built": true
         },
         "tag_remove": {
             "action": "tag_remove",
@@ -2158,7 +2158,7 @@
             "who": "tags.apply and edit",
             "agent": true,
             "record_id": "the record",
-            "built": false
+            "built": true
         },
         "lead_create": {
             "action": "lead_create",

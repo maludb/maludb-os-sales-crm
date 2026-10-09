@@ -685,6 +685,11 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-09 — SLICE 1 ACCOUNTS AND CONTACTS (THE CRUD EXEMPLAR) BUILT AND PROVEN, the same day.** 8 screens and 15 actions: cards, full pages with tabs by
+anchor, forms with the record picker and the duplicate warning, custom fields, notes, attachments in the canonical store, tags, restrict / delete /
+restore across kinds. `tests/phase3/slice1/run.sh`: 234 checks under php -S and under Apache; Phase 2 (271 / 276), Phase 0 and Phase 1 re-run green.
+The record and the decisions taken: `docs/build-specs/accounts-contacts.md` "Built and proven". **Next:** slice 2 (leads, import, duplicates and merge).
+
 **2026-10-09 — PHASE 2 THE SHELL BUILT AND PROVEN, the same day.** Today (the regions of §9 for a Rep and a manager, one button on the empty book),
 the one menu table with its rights, the tab bar Today · Pipeline · Calendar · Log · More, the one search box, the bell, the switcher, the command bar
 through the kernel, My settings with reminders and the signature, tokens, notifications, My activity; eleven placeholders. `tests/phase2/run.sh`:

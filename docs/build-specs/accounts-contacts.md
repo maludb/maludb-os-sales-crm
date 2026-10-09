@@ -98,3 +98,44 @@ Leads (2), deals and the board (3), activities (4), email compose (5), bulk acti
 
 ## Open questions
 None.
+
+## Built and proven (2026-10-09)
+The relationship's two records stand: accounts and contacts as cards with their filters (text by likeness, kind or lifecycle, owner, industry, role,
+opt-out, tag, last touch, a saved view), full pages with tabs by anchor (account: Overview · Contacts · Deals · Activities · Emails · Notes & files ·
+Tickets · History; contact: the opt-out banner, Overview with every address · Deals with the role · Activities · Emails · Notes & files · History),
+create and edit as full pages with the record picker for the parent, the account and the owner, the duplicate warning on blur, the custom fields per
+kind, and a manager's Restriction section; notes, attachments and tags on any record; restrict, delete (the tombstone) and restore across kinds.
+The registry reads the 8 screens and 15 actions built, the 3 deletions paused for agents.
+
+**Proven** by `tests/phase3/slice1/run.sh` on a fresh `crm_dev1`: **234 checks under php -S and the same under a real Apache** — accounts 35 (the
+domain derived and unique, named on its field; the parent picker's live accounts and the cycle refused; the kind by hand; custom fields typed and
+refused naming the field; a field left out kept; the edit rule naming the owner), contacts 34 (primary and the swap; the address mirror; placement
+by the address's domain, never free mail; the duplicate warning by email, name and domain; `block_exact_email` refusing on `email` naming the holder;
+the opt-out, its banner and its undo), records 33 (the restriction hiding the account from another seller's list, page, search, timeline, notes and
+picker while the owner, the team named and the managers see it; the setting off; the tombstone, the counters, restore by its owner, an account with
+deals needing a manager; the deletion approvals in `maludb-os.json`), notes 40 (a note touches; author or manager deletes; 25 MB stored at
+`attachments/<kind>/<id>/<sha12>-<name>` and streamed as a download; 26 MB, a program and an empty file refused; HTML never inline, an image inline
+when asked; an agent's base64 attachment; tags made, counted, applied to three, refused whole on one record the caller may not edit), json 49 (every
+screen and handler in JSON, the eight and six tabs, the Tickets and ledger panels' no-connection state, History = `crm_timeline`, the HTMX stamps, the
+registry), the browser 41 (the form with the picker and the warning, tabs by click, by `?tab=` and by anchor, a contact added from the tab, the tag
+editor, the banner, the eight screens at 375 and 1280, JavaScript off), the server log clean, the registry `--check`. Phase 2's suite re-run green
+(271 / 276), Phase 0 (173 + 71), Phase 1 (55); the installer's plan clean.
+
+**Decisions taken here (within the spec):**
+- Two shared partials beyond the file list — `shared/record-agenda.php` and `shared/record-emails.php` — serve both kinds' Activities and Emails tabs and
+  are the ones deals (slice 3) and leads (slice 2) reuse.
+- The duplicate warning is the form controller answering `?dupes=1` (Pattern A, nothing logged), not a new file.
+- Every tab pane is rendered by the server; `?tab=` chooses the active one (whole with JavaScript off); an anchor (`#account-tab-notes`) opens its pane
+  through the layout's one script, on load and after an HTMX navigation.
+- The header's Log call · Schedule · New deal · Send email appear only once their slice's controller exists — never a link to a 404.
+- The owner picker reads `mcp_members` (people and agents holding a role here); the kit's `members_for_pick()` took the picker contract.
+- A restriction with nobody named goes to the record's owner; restoring is for whoever deleted it, its owner, or a manager.
+- Saving a contact as primary clears the account's other primary in the same transaction (one primary per account is the database's index).
+- An agent attaches with `file_base64` + `filename` (the actions server posts forms, not multipart).
+- `k7_read()` is a stub in `app/api/kernel.php` answering `no_connection`; slice 8 makes it real.
+- The kit gained `crm_text()`, `crm_email()`, `crm_choice()`; the header at 375 px hides the dark-mode toggle below 576 px and caps the role badge (the
+  Sales Manager's badge pushed the avatar off the edge).
+- Phase 2's proofs now follow the placeholders still owed (read from the files), so they stay green as each slice lands.
+
+**Seen, not changed:** a primary contact who is deleted leaves the account without a primary until someone sets one — the trigger promotes only on a
+live contact's insert or update. The spec is silent; worth a word in slice 2's merge work, which touches the same trigger's ground.

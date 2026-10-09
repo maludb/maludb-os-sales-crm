@@ -129,6 +129,16 @@ function kernel_read(PDO $pdo, string $provider, string $tool, array $arguments)
     return ['status' => $status, 'result' => $result, 'error' => $code];
 }
 
+/**
+ * A sibling's shared tool as the screens read it: ['status' => ok | no_connection | unavailable, 'rows' => [...]]. SLICE 1 STUB (accounts-contacts.md,
+ * divergence 3): it answers `no_connection` without asking the kernel, so the Tickets tab and the ledger panel render their empty state; slice 8
+ * (agents-k7-api.md) makes it real — kernel_read() under a five-minute cache, a refusal degrading to no_connection, the records server through the bridge.
+ */
+function k7_read(PDO $pdo, string $provider, string $tool, array $arguments): array
+{
+    return ['status' => 'no_connection', 'rows' => []];
+}
+
 /** The rows of a provider's answer: the list itself, or its `rows`, `results` or `items`. */
 function kernel_rows(?array $result): array
 {

@@ -116,3 +116,8 @@ html.app-skin-dark #record-picker .record-picker-search { background: #0f172a; }
 .header-apps-menu { min-width: 260px; }
 .header-apps-menu .header-apps-list { max-height: calc(100vh - 260px); overflow-y: auto; }
 .header-apps-menu .dropdown-item.active { background: var(--bs-primary-bg-subtle, rgba(59, 130, 246, .12)); color: inherit; cursor: default; }
+
+/* Slice 1 (2026-10-09): the header at 375 px holds the business name, the badge, the search magnifier, the bell and the avatar — the dark-mode
+   toggle steps aside below 576 px (the layout's d-none d-sm-flex) and the badge truncates rather than push the avatar off the edge. */
+#header-role-badge { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 575.98px) { .header-right .nxl-h-item .nxl-head-link { padding-left: 8px; padding-right: 8px; } }

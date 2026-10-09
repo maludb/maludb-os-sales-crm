@@ -1,6 +1,6 @@
 <?php
 /**
- * Proof: the record picker as the Phase 2 shell carries it, with an EMPTY registry (design-system record-picker.md "Building it into
+ * Proof: the record picker as the Phase 2 shell carries it (the registry empty at Phase 2; the slices' sources keep its contract) (design-system record-picker.md "Building it into
  * a new application"): the modal once and the script once on a full page, the endpoint's refusals as fragments (404 for a signed-in
  * person, the launcher for no session, JSON 401), the registry empty, the script parses, the CSS section is there, nothing in the
  * server's log. The slices prove their own sources (search, paging, a dependent param) when they add them.
@@ -47,7 +47,9 @@ $r = req('POST', '/pick/', ['jar' => $jAdmin, 'form' => ['source' => 'anything']
 ok($r['code'] === 404, 'a search is a GET; a POST with a source the registry lacks is the same 404 (nothing is chosen or written)');
 
 echo "3. The registry and the log\n";
-ok((require $root . '/app/pickers.php') === [], 'app/pickers.php returns [] — no slice has added a source yet');
+$sources = require $root . '/app/pickers.php';
+ok(is_array($sources) && array_filter($sources, static fn ($s) => !isset($s['title'], $s['noun'], $s['roles'], $s['params'], $s['search'], $s['label']) || !is_callable($s['search']) || !is_callable($s['label'])) === [],
+    'app/pickers.php: every source the slices added keeps the contract (title, noun, roles, params, search, label) — ' . (implode(', ', array_keys($sources)) ?: 'none yet'));
 $before = last_activity_id();
 page($jAdmin, '/pick/?source=anything');
 ok(last_activity_id() === $before, 'a search is not an action: nothing is written to the activity log');

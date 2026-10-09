@@ -73,12 +73,6 @@ function today_record_url(array $r): string
     return '/activities/' . (int) $r['activity_id'];
 }
 
-/** A kind's icon (the six kinds of activities, db/010). */
-function activity_kind_icon(string $kind): string
-{
-    return ['call' => 'feather-phone', 'email' => 'feather-mail', 'meeting' => 'feather-users', 'task' => 'feather-check-square', 'deadline' => 'feather-flag', 'lunch' => 'feather-coffee'][$kind] ?? 'feather-circle';
-}
-
 /** The JSON shape of the home (whitelisted). */
 function present_home(array $s, string $tz): array
 {

@@ -45,42 +45,53 @@ $badges = array_map('badge_of', $who);
 ok($badges === ['admin' => 'Super-admin', 'manager' => 'Sales Manager', 'rep' => 'Sales Rep', 'bea' => 'Sales Rep', 'viewer' => 'Viewer', 'marketing' => 'Marketing'],
     'the header badge reads the highest role held: ' . implode(', ', $badges));
 
-echo "2. The placeholders — a page naming its slice, 501 for JSON and for a POST\n";
-$stubs = trim((string) shell_exec('grep -rl "render_nav_stub(" ' . escapeshellarg(dirname(__DIR__, 2) . '/html') . ' 2>/dev/null | wc -l'));
-ok((int) $stubs === 15, "fifteen controllers call render_nav_stub — eleven placeholders, the three key handlers (slice 8) and the feed handler (slice 4): $stubs");
-$ph = ['leads' => ['/leads', 'slice 2', 'Leads'], 'accounts' => ['/accounts', 'slice 1', 'Accounts'], 'contacts' => ['/contacts', 'slice 1', 'Contacts'],
-       'pipeline' => [$board, 'slice 3', 'Pipeline'], 'calendar' => ['/calendar', 'slice 4', 'Calendar'], 'activities' => ['/activities', 'slice 4', 'Activities'],
-       'email' => ['/email/unmatched', 'slice 5', 'Email'], 'campaigns' => ['/campaigns', 'slice 6', 'Campaigns'], 'lists' => ['/lists', 'slice 6', 'Lists'],
-       'reports' => ['/reports', 'slice 7', 'Reports'], 'admin' => ['/admin', 'slice 9', 'Admin']];
+echo "2. The placeholders — a page naming its slice, 501 for JSON and for a POST (those whose slice has not shipped yet)\n";
+$html = dirname(__DIR__, 2) . '/html';
+$isStub = static fn (string $file): bool => is_file($html . $file) && str_contains((string) file_get_contents($html . $file), 'render_nav_stub(');
+$ph = ['leads' => ['/leads', '/leads/index.php', 'slice 2', 'Leads'], 'accounts' => ['/accounts', '/accounts/index.php', 'slice 1', 'Accounts'], 'contacts' => ['/contacts', '/contacts/index.php', 'slice 1', 'Contacts'],
+       'pipeline' => [$board, '/pipeline/board.php', 'slice 3', 'Pipeline'], 'calendar' => ['/calendar', '/calendar/index.php', 'slice 4', 'Calendar'], 'activities' => ['/activities', '/activities/index.php', 'slice 4', 'Activities'],
+       'email' => ['/email/unmatched', '/email/unmatched.php', 'slice 5', 'Email'], 'campaigns' => ['/campaigns', '/campaigns/index.php', 'slice 6', 'Campaigns'], 'lists' => ['/lists', '/lists/index.php', 'slice 6', 'Lists'],
+       'reports' => ['/reports', '/reports/index.php', 'slice 7', 'Reports'], 'admin' => ['/admin', '/admin/index.php', 'slice 9', 'Admin']];
+$left = array_filter($ph, static fn (array $p): bool => $isStub($p[1]));
+$actionStubs = array_filter(['/settings/tokens/key-mint.php', '/settings/tokens/key-rotate.php', '/settings/tokens/key-revoke.php', '/settings/feed.php'], $isStub);
+$stubs = (int) trim((string) shell_exec('grep -rl "render_nav_stub(" ' . escapeshellarg($html) . ' 2>/dev/null | wc -l'));
+ok($stubs === count($left) + count($actionStubs), "the controllers calling render_nav_stub are the placeholders still owed (" . count($left) . ': ' . implode(', ', array_keys($left)) . ') and the action stubs (' . count($actionStubs) . ")");
 $bad = [];
-foreach ($ph as $id => [$url, $slice, $title]) {
+foreach ($left as $id => [$url, , $slice, $title]) {
     $b = page($who['admin'], $url)['body'];
     if (!(str_contains($b, 'id="' . $id . '-coming"') && str_contains($b, $title . ' is not built yet') && str_contains($b, $slice . ' builds this screen') && str_contains($b, '<title>' . $title . ' · Sales CRM</title>'))) { $bad[] = $url; }
 }
-ok($bad === [], 'every placeholder: the shell, the header and one card saying which slice builds it' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
-$r = page($who['admin'], '/accounts', $json);
-ok($r['code'] === 501 && (json_decode($r['body'], true)['error']['code'] ?? '') === 'not_built', 'a JSON caller on a placeholder: 501 not_built');
-$r = req('POST', '/accounts', ['jar' => $who['admin'], 'form' => ['csrf_token' => page_csrf($who['admin'])]]);
-ok($r['code'] === 501 && str_contains($r['body'], 'This is built by slice 1.'), 'a POST to a placeholder: 501, in words');
-$r = req('POST', '/settings/tokens/key-mint.php', ['jar' => $who['rep'], 'headers' => ['Accept: application/json'], 'form' => ['csrf_token' => page_csrf($who['rep']), 'label' => 'x']]);
-ok($r['code'] === 501 && str_contains((string) (json_decode($r['body'], true)['error']['message'] ?? ''), 'slice 8'), 'key_mint answers 501 naming slice 8 until it is built');
-$r = req('POST', '/settings/feed.php', ['jar' => $who['rep'], 'form' => ['csrf_token' => page_csrf($who['rep']), 'confirm' => 'yes']]);
-ok($r['code'] === 501 && str_contains($r['body'], 'This is built by slice 4.'), 'feed_rotate answers 501 naming slice 4 until it is built');
-$r = page($who['admin'], '/calendar', ['headers' => ['HX-Request: true']]);
-ok($r['code'] === 200 && str_contains($r['body'], 'id="calendar-coming"') && !str_contains($r['body'], '<html') && preg_match('/^HX-Title: Calendar/mi', $r['headers']) === 1 && preg_match('/^X-Screen: calendar\r?$/mi', $r['headers']) === 1, 'over HTMX a placeholder is the partial with HX-Title and X-Screen, so the tab highlight and the command bar follow');
-$v = (int) one("SELECT count(*) FROM activity_log WHERE action = 'screen.view' AND screen = 'calendar'");
-ok($v >= 2, "opening a placeholder logs screen.view for its screen ($v for calendar)");
+ok($bad === [], 'every placeholder still owed: the shell, the header and one card saying which slice builds it' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
+[$stubUrl, , $stubSlice] = array_values($left)[0] ?? ['/admin', '', 'slice 9'];
+$r = page($who['admin'], $stubUrl, $json);
+ok($r['code'] === 501 && (json_decode($r['body'], true)['error']['code'] ?? '') === 'not_built', "a JSON caller on a placeholder ($stubUrl): 501 not_built");
+$r = req('POST', $stubUrl, ['jar' => $who['admin'], 'form' => ['csrf_token' => page_csrf($who['admin'])]]);
+ok($r['code'] === 501 && str_contains($r['body'], 'This is built by ' . $stubSlice . '.'), 'a POST to a placeholder: 501, in words');
+if ($isStub('/settings/tokens/key-mint.php')) {
+    $r = req('POST', '/settings/tokens/key-mint.php', ['jar' => $who['rep'], 'headers' => ['Accept: application/json'], 'form' => ['csrf_token' => page_csrf($who['rep']), 'label' => 'x']]);
+    ok($r['code'] === 501 && str_contains((string) (json_decode($r['body'], true)['error']['message'] ?? ''), 'slice 8'), 'key_mint answers 501 naming slice 8 until it is built');
+}
+if ($isStub('/settings/feed.php')) {
+    $r = req('POST', '/settings/feed.php', ['jar' => $who['rep'], 'form' => ['csrf_token' => page_csrf($who['rep']), 'confirm' => 'yes']]);
+    ok($r['code'] === 501 && str_contains($r['body'], 'This is built by slice 4.'), 'feed_rotate answers 501 naming slice 4 until it is built');
+}
+if (isset($left['calendar'])) {
+    $r = page($who['admin'], '/calendar', ['headers' => ['HX-Request: true']]);
+    ok($r['code'] === 200 && str_contains($r['body'], 'id="calendar-coming"') && !str_contains($r['body'], '<html') && preg_match('/^HX-Title: Calendar/mi', $r['headers']) === 1 && preg_match('/^X-Screen: calendar\r?$/mi', $r['headers']) === 1, 'over HTMX a placeholder is the partial with HX-Title and X-Screen, so the tab highlight and the command bar follow');
+    $v = (int) one("SELECT count(*) FROM activity_log WHERE action = 'screen.view' AND screen = 'calendar'");
+    ok($v >= 2, "opening a placeholder logs screen.view for its screen ($v for calendar)");
+}
 $built = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/mcp/action_registry.json'), true);
 $sc = $built['screens'] ?? [];
 $ac = $built['actions'] ?? [];
 $stubIds = array_keys(array_filter($sc, static fn ($s) => !empty($s['stub'])));
 $builtIds = array_keys(array_filter($sc, static fn ($s) => !empty($s['built'])));
 $builtActions = array_keys(array_filter($ac, static fn ($a) => !empty($a['built'])));
-sort($builtIds); sort($builtActions);
-ok(count($stubIds) === 11 && $builtIds === ['activity', 'home', 'notifications', 'search', 'settings', 'settings-tokens'],
-    'the registry marks eleven screens as stubs and the shell\'s six as built, so the voice surface never offers an unbuilt screen (' . implode(', ', $builtIds) . ')');
-ok($builtActions === ['notification_read', 'notifications_read_all', 'prefs_save', 'signature_save', 'token_mint', 'token_revoke'] && empty($ac['key_mint']['built']) && empty($ac['feed_rotate']['built']),
-    'and the shell\'s six actions as built — key_mint and feed_rotate (stubs) are not: ' . implode(', ', $builtActions));
+$shellScreens = ['activity', 'home', 'notifications', 'search', 'settings', 'settings-tokens'];
+$shellActions = ['notification_read', 'notifications_read_all', 'prefs_save', 'signature_save', 'token_mint', 'token_revoke'];
+ok(count($stubIds) === count($left) && array_diff($shellScreens, $builtIds) === [], 'the registry marks the placeholders still owed as stubs (' . count($stubIds) . ') and the shell\'s six screens as built, so the voice surface never offers an unbuilt screen');
+ok(array_diff($shellActions, $builtActions) === [] && ($isStub('/settings/tokens/key-mint.php') ? empty($ac['key_mint']['built']) : true) && ($isStub('/settings/feed.php') ? empty($ac['feed_rotate']['built']) : true),
+    'the shell\'s six actions read as built; key_mint and feed_rotate do not while they are stubs');
 
 echo "3. The menu and the tab bar per role, and no session\n";
 $menu = static fn (string $j): array => (preg_match_all('/id="nav-([a-z-]+)"/', page($j, '/')['body'], $m) ? array_values(array_filter($m[1], static fn ($i) => $i !== 'leads-inbox')) : []);
