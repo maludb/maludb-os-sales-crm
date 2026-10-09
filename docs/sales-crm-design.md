@@ -685,6 +685,9 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-09 — PHASE 1 APPROVED by the owner, as written** ("Approved as written"): the schema db/001–017, the tool surface and the action manifest together, and the
+eleven decisions of `docs/phase1-consistency.md`. The checkpoint gate is open: Phase 2 (`docs/build-specs/sso-shell.md`) begins the same day.
+
 **2026-10-09 — PHASE 1 WRITTEN, the same day, for the owner's checkpoint.** `docs/sales-crm-mcp-tool-surface.md` (72 records tools incl. the five shares reading
 `X-OS-Consumer`, 7 activity tools, 17 resolver entities, the records API and the capture route, the activity vocabulary), `docs/sales-crm-action-manifest.md`
 (84 screens, 121 actions, 33 paused — 5 `external_send`, 13 `deletion`, 15 `other`; 15 people-only) and `mcp/action_registry.json` built from it
