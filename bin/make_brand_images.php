@@ -19,14 +19,12 @@ function mark(int $size, bool $rounded = true): GdImage
     foreach ([[$r, $r], [$size - 1 - $r, $r], [$r, $size - 1 - $r], [$size - 1 - $r, $size - 1 - $r]] as [$cx, $cy]) {
         imagefilledellipse($im, $cx, $cy, $r * 2, $r * 2, $bg);
     }
-    // a package: the box, its lid line, the tape down the middle
+    // a target (the catalog's feather-target): three rings and the bull's-eye — the deal you are aiming at
     $white = imagecolorallocate($im, 255, 255, 255);
-    $x0 = (int) ($size * 0.22); $x1 = (int) ($size * 0.78); $y0 = (int) ($size * 0.30); $y1 = (int) ($size * 0.78);
-    $t = max(2, (int) ($size * 0.06));
-    imagefilledrectangle($im, $x0, $y0, $x1, $y1, $white);
-    imagefilledrectangle($im, $x0, (int) ($size * 0.44), $x1, (int) ($size * 0.44) + max(1, (int) ($t / 2)), $bg);
-    $cx = (int) ($size * 0.50);
-    imagefilledrectangle($im, $cx - (int) ($t / 2), $y0, $cx + (int) ($t / 2), (int) ($size * 0.44), $bg);
+    $c = (int) round($size / 2);
+    foreach ([[0.62, $white], [0.48, $bg], [0.36, $white], [0.22, $bg], [0.12, $white]] as [$d, $col]) {
+        imagefilledellipse($im, $c, $c, (int) round($size * $d), (int) round($size * $d), $col);
+    }
     return $im;
 }
 foreach (['favicon.png' => 64, 'logo-abbr.png' => 128, 'apple-touch-icon.png' => 180, 'icon-192.png' => 192, 'icon-512.png' => 512] as $file => $size) {

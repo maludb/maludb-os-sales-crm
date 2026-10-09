@@ -1,0 +1,2 @@
+<?php /** The header bell's count (Pattern A: re-fetched every minute and on notificationChanged). Data: unread */ ?>
+<span id="header-bell-count-wrap" hx-get="/notifications?count=1" hx-trigger="every 60s [document.visibilityState=='visible'], notificationChanged from:body" hx-swap="outerHTML" hx-target="this"><?php if ($unread > 0): ?><span class="badge bg-danger nxl-h-badge" id="header-bell-count"><?= $unread > 99 ? '99+' : (int) $unread ?></span><?php endif; ?></span>

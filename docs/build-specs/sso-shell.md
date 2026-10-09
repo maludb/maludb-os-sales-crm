@@ -98,3 +98,43 @@ endpoint and renders the reply; 375 (the tab bar, no horizontal scroll) and 1280
 
 ## Open questions
 None.
+
+## Built and proven (2026-10-09)
+The shell stands: a person signs on through the kernel's hand-off and lands on **Today** (`crm_my_activities('today')` overdue first, the chips in the
+four states with the word printed beside the colour; my deals closing this month — value and weighted, another currency counted apart; the two
+flags as links to the board filtered; replies since yesterday on my deals and to my contacts; the Sales Assistant's morning note when there is one;
+for `reports.team` the team's forecast tile and the leaderboard's top three — who won something). A new person on the empty book sees ONE button,
+Add your first lead (a plain link until slice 2's form ships); a Viewer is told the book is empty. The sidebar is `nav_groups()` — one menu table,
+every item gated by its right (Email `email.log`, Lists `lists.own`, Admin any admin area's right); the Leads item carries the lead inbox's badge; the
+header carries the business name, the highest role as a badge (Super-admin › CRM admin › Sales Manager › Marketing › Sales Rep › Viewer), THE ONE
+SEARCH BOX (a magnifier at 375), the bell, the switcher (K31) and the account menu. The phone's tab bar is Today · Pipeline (the default pipeline's
+board by its key) · Calendar · Log (a dropup of the five quick-log links, each greyed with its slice until built — never a modal, never a link to a
+404) · More (the sidebar). Search (`/search`, `crm_search`): grouped by kind, the words marked, a misspelling found, the wall the function's, every
+search logged `search.keyword` with the query cut at 120 and the count. My settings: how I am told (the fifteen kinds), my reminders (the default
+lead time, the morning note and its hour, the digest — blank means the business's), my signature, my calendar link (slice 4 makes it), my time zone.
+Tokens (an expiry in days), notifications (read one, read all), My activity in words. Eleven placeholders and four action stubs (`key_*` slice 8,
+`feed_rotate` slice 4) call `render_nav_stub()`; the registry reads 6 screens and 6 actions built, 11 stubs.
+
+**Proven** by `tests/phase2/run.sh`: **271 checks under php -S, 276 under a real Apache** serving the rendered vhost with the internal port
+(firstrun 15 on the empty book, browser 75 at 375 × 740, 1280 × 800 and JavaScript off, gates 97 over six roles, guard 6, vhost 44/49, picker 22,
+switcher 12, the registry) and the schema proof (173) on the scratch database; Phase 0's kit (71) and Phase 1's claims (55) re-run green; the
+installer's plan clean (57 steps, 9 notes).
+
+**Found and fixed in Phase 2:**
+- **db/018** — `mcp_activity_log` was granted to the activity server's role only; My activity (and slice 1's History tab) read it as the application.
+- **The write guard read only P0001**: the schema raises its refusals as `check_violation` (34 of them, a stage's required fields among them),
+  `unique_violation` (an address another contact holds), `foreign_key_violation` and `no_data_found` — each would have answered 500. `crm_guard()` now
+  answers 422 (404 for no_data_found) with the schema's sentence, and `db_message()` never shows PostgreSQL's own constraint text (`tests/phase2/guard.php`).
+  Inventory fixed the check_violation half the same day; its other codes, and DocCloud's guard, are worth the same look.
+- **mod_headers** was not enabled on this host and the vhost's `Header` lines would fail Apache's config test at apply: they are guarded by
+  `<IfModule mod_headers.c>` and `deploy/ROOT_STEPS.sh` gains **step 0b** (`a2enmod rewrite proxy proxy_http headers`).
+- Kit leftovers from the siblings: the session cookie was Inventory's (`INVSID` → `CRMSID`), `is_dc_admin()` → `is_crm_admin()`, the kernel bridge's
+  refresh events named Inventory's entities, the web manifest named Inventory, the brand images were Inventory's package (now a target, drawn by
+  `bin/make_brand_images.php`), the dev router and the internal vhost carried DocCloud's `/d/` `/f/` `/upload/` doors, `tests/setup_dev.sh` wrote
+  DocCloud's env keys (now a scratch storage directory and the mailbox's webhook secret).
+- Phase 0's rate-rule check failed when a run crossed a minute boundary; it now makes 61 calls in one statement and accepts either side.
+- The fake kernel answers K31's `GET /api/v1/apps/mine.php` from its state, so the switcher is proven through the header, not only from a fixture.
+
+**Decisions taken here** (within the spec): `notification_prefs` is made on sign-on and by every sync for every admitted member, person or agent; the
+receiver honours a same-origin `next`; the health check reports the storage directory without failing on it (slices 1, 2 and 6 write there);
+`prefs_save` admits an agent (its own preferences), `signature_save` and the tokens are people's.

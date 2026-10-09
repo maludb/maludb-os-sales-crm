@@ -108,7 +108,7 @@ function require_login(): void
 }
 
 /** Runs Sales CRM: the super-admin, or a human holding settings.manage (db/004). */
-function is_dc_admin(): bool
+function is_crm_admin(): bool
 {
     static $v = null;
     return $v ??= db_bool(db(), 'SELECT crm_is_admin()');
@@ -145,7 +145,7 @@ function require_human(): void
 function require_admin(): void
 {
     require_login();
-    if (!is_dc_admin()) {
+    if (!is_crm_admin()) {
         refuse(403, 'This needs the Sales CRM admin role, or the super-admin.');
     }
 }

@@ -53,6 +53,10 @@ try {
         $next = $doc['next'] ?? $next;
         $wasFull = $wasFull || !empty($doc['full']);
     }
+    // every admitted member (a person or an agent) has notification preferences before they look for them (sso-shell.md): the table's defaults
+    $counts['prefs'] = (int) $pdo->query("WITH made AS (INSERT INTO notification_prefs (member_id)
+                                            SELECT m.id FROM members m WHERE m.status = 'active' AND m.capability IS NOT NULL
+                                            ON CONFLICT (member_id) DO NOTHING RETURNING 1) SELECT count(*) FROM made")->fetchColumn();
     $pdo->prepare('UPDATE directory_sync_state SET next_cursor = COALESCE(:n, next_cursor), full_at = CASE WHEN :full THEN now() ELSE full_at END,
                           last_run_at = now(), last_error = NULL, updated_at = now() WHERE id = 1')
         ->execute(['n' => $next, 'full' => $wasFull ? 't' : 'f']);
@@ -66,5 +70,5 @@ try {
 if (array_sum($counts) > 0 || $wasFull) {
     log_activity($pdo, 'directory.sync', null, null, ['actor_member_id' => null, 'after' => $counts + ['full' => $wasFull]]);
 }
-printf("applied %d members, %d departments, %d memberships, %d holdings%s; cursor %s\n", $counts['members'], $counts['departments'],
-    $counts['memberships'], $counts['access'], $wasFull ? ' (full)' : '', $next ?? '(unchanged)');
+printf("applied %d members, %d departments, %d memberships, %d holdings, %d notification preferences made%s; cursor %s\n", $counts['members'], $counts['departments'],
+    $counts['memberships'], $counts['access'], $counts['prefs'], $wasFull ? ' (full)' : '', $next ?? '(unchanged)');

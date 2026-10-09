@@ -3,7 +3,7 @@
 # later phases ADD steps and mark them. NOTHING HERE HAS BEEN RUN: the proofs use a scratch database, php -S and fixtures, and
 # never touch an installed application, Apache, systemd or the MaluDB API.
 #   bash deploy/ROOT_STEPS.sh              prints this plan (the default)
-#   sudo bash deploy/ROOT_STEPS.sh apply   runs the steps with no decision in them: 0 and 2b (the ports, the storage directory)
+#   sudo bash deploy/ROOT_STEPS.sh apply   runs the steps with no decision in them: 0, 0b and 2b (the ports, Apache's modules, the storage directory)
 # Steps 1, 2, 3 and 4 are printed and never run: they are the installer's, the owner's, or put a secret somewhere.
 set -euo pipefail
 APP=/srv/apps/sales_crm
@@ -25,6 +25,12 @@ else
   echo "   (config/.env exists — leaving it alone)"
 fi
 #    See that it worked:  php $KERNEL/bin/app_install.php plan $APP --domain subello.com | grep -E '^(todo|done) +(ports|vhost)'   -> ports done, no {{...}} unfilled
+
+# 0b. APACHE'S MODULES (ROOT; idempotent; added in Phase 2, 2026-10-09). The vhost rewrites (rewrite), proxies the two MCP servers (proxy,
+#     proxy_http) and sets nosniff and the frame option (headers — this host had it disabled, found by the Phase 2 Apache proof; the vhost
+#     guards its Header lines with <IfModule> so a missing module never fails the config test, but the headers are wanted).
+echo "== 0b. Apache's modules (ROOT): rewrite, proxy, proxy_http, headers"
+run a2enmod -q rewrite proxy proxy_http headers
 
 # ------------------------------------------------------------------------------------------------------------------
 # 1. Look (read-only, any user): what the installer would do.

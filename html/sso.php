@@ -84,8 +84,12 @@ session_regenerate_id(true);
 $_SESSION = ['member_id' => $memberId, 'csrf_token' => bin2hex(random_bytes(32)), 'signed_on_at' => time()];
 session_open($pdo, $memberId, session_id());
 db_apply_context($pdo);
+// How they are told exists before they look (sso-shell.md): the table's defaults until they choose. The directory sync does the same for every new member.
+$pdo->prepare('INSERT INTO notification_prefs (member_id) VALUES (:m) ON CONFLICT (member_id) DO NOTHING')->execute(['m' => $memberId]);
 log_activity($pdo, 'member.sign_on', 'member', $memberId, ['request_id' => $requestId, 'after' => ['capability' => $capability, 'roles' => $claims['roles'] ?? null]]);
 
+// Where the launcher sent them: `next`, same-origin only (a local path; anything else is the home).
+$next = safe_local_path(is_string($_GET['next'] ?? null) ? $_GET['next'] : null) ?? '/';
 header('Cache-Control: no-store');
-header('Location: /', true, 302);
+header('Location: ' . $next, true, 302);
 exit;

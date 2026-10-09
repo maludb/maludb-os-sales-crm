@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-09T18:14:05+00:00",
+    "generated_at": "2026-10-09T20:27:13+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -20,7 +20,7 @@
                 "q",
                 "kinds"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "notifications": {
@@ -29,7 +29,7 @@
             "section": "Home, me and the shell (Phase 2; the search box)",
             "when": "my notices, unread first",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "activity": {
@@ -38,7 +38,7 @@
             "section": "Home, me and the shell (Phase 2; the search box)",
             "when": "my own trail here",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "settings": {
@@ -47,7 +47,7 @@
             "section": "Home, me and the shell (Phase 2; the search box)",
             "when": "my preferences: reminders by email and text, the default reminder, the morning note and its hour, my signature, my ICS link",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "settings-tokens": {
@@ -56,7 +56,7 @@
             "section": "Home, me and the shell (Phase 2; the search box)",
             "when": "my MCP tokens and my API keys: mint (shown once), rotate, revoke",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "account-list": {
@@ -75,7 +75,7 @@
                 "view"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "account-view": {
             "screen": "account-view",
@@ -126,7 +126,7 @@
                 "view"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "contact-view": {
             "screen": "contact-view",
@@ -178,7 +178,7 @@
                 "view"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "lead-inbox": {
             "screen": "lead-inbox",
@@ -305,7 +305,7 @@
                 "view"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "deal-list": {
             "screen": "deal-list",
@@ -404,7 +404,7 @@
                 "kinds"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "activity-list": {
             "screen": "activity-list",
@@ -424,7 +424,7 @@
                 "view"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "activity-view": {
             "screen": "activity-view",
@@ -516,7 +516,7 @@
             "when": "emails matched to no one, and proposed leads from strangers: Make lead · Attach to contact · Ignore",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "log-email": {
             "screen": "log-email",
@@ -568,7 +568,7 @@
                 "owner"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "campaign-view": {
             "screen": "campaign-view",
@@ -606,7 +606,7 @@
                 "record_kind"
             ],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "list-view": {
             "screen": "list-view",
@@ -656,7 +656,7 @@
             "when": "the reports as cards with a number each: forecast, funnel, win rate, cycle time, sources, campaigns, activity, leaderboard, lost reasons",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "report-funnel": {
             "screen": "report-funnel",
@@ -799,7 +799,7 @@
             "when": "the admin home: the areas as cards with a number each; the mailbox's health; the tombstones due",
             "params": [],
             "built": false,
-            "stub": false
+            "stub": true
         },
         "admin-pipelines": {
             "screen": "admin-pipelines",
@@ -992,7 +992,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the prefs",
-            "built": false
+            "built": true
         },
         "signature_save": {
             "action": "signature_save",
@@ -1013,7 +1013,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the member",
-            "built": false
+            "built": true
         },
         "feed_rotate": {
             "action": "feed_rotate",
@@ -1055,7 +1055,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the notification",
-            "built": false
+            "built": true
         },
         "notifications_read_all": {
             "action": "notifications_read_all",
@@ -1076,7 +1076,7 @@
             "who": "own",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "token_mint": {
             "action": "token_mint",
@@ -1103,7 +1103,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the token",
-            "built": false
+            "built": true
         },
         "token_revoke": {
             "action": "token_revoke",
@@ -1124,7 +1124,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the token",
-            "built": false
+            "built": true
         },
         "key_mint": {
             "action": "key_mint",

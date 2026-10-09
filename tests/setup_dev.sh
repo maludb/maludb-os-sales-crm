@@ -24,6 +24,8 @@ else
   PW_RW=$PW; PW_REC=$PW; PW_ACT=$PW
   for r in sales_crm_rw sales_crm_records_ro sales_crm_activity_ro; do $PSQL -c "ALTER ROLE $r WITH LOGIN PASSWORD '$PW'"; done
 fi
+STORE=${CRM_DEV_STORAGE:-/tmp/${DB}-storage}          # attachments, imports, exports (ROOT_STEPS 2b): a scratch directory, emptied
+rm -rf "$STORE"; mkdir -p "$STORE"/{attachments,imports,exports}
 umask 077
 cat > "$ENVF" <<ENV
 APP_ENV=dev
@@ -54,11 +56,8 @@ MALUMAIL_API_URL=http://127.0.0.1:8806
 MALUMAIL_API_KEY=dev-malumail-$(openssl rand -hex 8)
 MAIL_FROM=crm@example.invalid
 MAIL_FROM_NAME="Sales CRM"
-CRM_STORAGE_DIR=
-CRM_MAX_DOCUMENT_BYTES=
-CRM_PDFTOTEXT=
-CRM_PDFTOPPM=
-MALUDB_DC_API_URL=
-MALUDB_DC_API_TOKEN=
+CRM_STORAGE_DIR=$STORE
+CRM_MAX_IMPORT_ROWS=
+MAILBOX_CRM_WEBHOOK_SECRET=dev-mailbox-$(openssl rand -hex 8)
 ENV
 echo "scratch database $DB ready; environment in $ENVF"

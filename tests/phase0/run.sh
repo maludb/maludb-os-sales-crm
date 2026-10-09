@@ -11,10 +11,10 @@
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 export CRM_DEV_DB=${CRM_DEV_DB:-crm_dev0}
-export CRM_DEV_ENV=${CRM_DEV_ENV:-/tmp/dc-dev0.env}
+export CRM_DEV_ENV=${CRM_DEV_ENV:-/tmp/crm-dev0.env}
 PY=${CRM_PY:-/var/www/mcp/venv/bin/python}
 PORT=8807; P_KERNEL=8802; P_FAKE=8803
-TMP=$(mktemp -d /tmp/dc-kit.XXXXXX)
+TMP=$(mktemp -d /tmp/crm-kit.XXXXXX)
 pass=0; fail=0; PIDS=()
 ok()   { echo "ok   $1"; pass=$((pass+1)); }
 bad()  { echo "FAIL $1"; fail=$((fail+1)); }
@@ -83,8 +83,8 @@ check "$(curl -s $APP/api/v1/health | php -r 'echo json_decode(stream_get_conten
 url27=$(php bin/dev_handoff.php 27)
 check "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -c "$TMP/jar27" "$url27")" "302 $APP/" "a signed hand-off token opens a session (302 to /)"
 home27=$(curl -s -b "$TMP/jar27" "$APP/")
-has "$home27" 'id="home-member">SMOKE Marco<' "the home placeholder names the signed-in member"
-has "$home27" 'Sales Manager' "…and the roles the kernel sent"
+has "$home27" 'id="header-user-name">SMOKE Marco<' "the home (the shell since Phase 2) names the signed-in member"
+has "$home27" 'id="header-role-badge">Sales Manager<' "…and the highest role the kernel sent, as the header's badge"
 check "$(curl -s -o /dev/null -w '%{http_code}' "$url27")" "403" "the same token a second time is refused (replay)"
 check "$(curl -s -o /dev/null -w '%{http_code}' "$(HANDOFF_TTL=-120 php bin/dev_handoff.php 26)")" "403" "an expired token is refused"
 bad_url=$(APP_KEY=other php bin/dev_handoff.php 26 | sed "s#$APP##")
@@ -125,8 +125,10 @@ check "$(sql "select token_id || ':' || source || ':' || (after->>'label') from 
 MCP="mcp_$(openssl rand -hex 24)"; MH=$(printf '%s' "$MCP" | openssl dgst -sha256 | sed 's/.* //')
 sql "insert into mcp_access_tokens (member_id, label, token_hash, scope) values (26, 'SMOKE mcp', '$MH', 'mcp')" >/dev/null
 has "$(php tests/phase0/probe.php apikey "$MCP" 2>&1 | tr '\n' ' ')" '"code":"unauthorized"' "a person's mcp token is not a door to the token API"
-rl=$(sql "select string_agg(ok::text, ',' order by n) from (select n, (crm_rate_ok($TOK)).ok from generate_series(1, 60) n) s" | tr ',' '\n' | sort | uniq -c | tr -s ' ' | tr '\n' ';')
-check "$rl" " 1 false; 59 true;" "the rate rule counts 60 calls a minute (the key's API call above was the first) and refuses the 61st (crm_rate_ok)"
+# 61 calls in one statement: the key's API call above counts when it fell in this same minute (then 59 more pass and 2 are refused), not when the
+# minute turned since (then 60 pass and 1 is refused) — either way the 61st call of a minute is refused. (A run crossing the minute failed the old form.)
+rl=$(sql "select string_agg(ok::text, ',' order by n) from (select n, (crm_rate_ok($TOK)).ok from generate_series(1, 61) n) s" | tr ',' '\n' | sort | uniq -c | tr -s ' ' | tr '\n' ';')
+case "$rl" in " 2 false; 59 true;"|" 1 false; 60 true;") ok "the rate rule counts 60 calls a minute and refuses the 61st (crm_rate_ok) — $rl" ;; *) bad "the rate rule (got: $rl, wanted 60 a minute with the earlier call counted or not)" ;; esac
 NEW=$(sql "select crm_key_rotate($TOK, '$(openssl rand -hex 32)')"); check "$(sql "select rotated_from = $TOK and rate_per_minute = 60 from mcp_access_tokens where id = $NEW") $(sql "select expires_at <= now() + interval '25 hours' from mcp_access_tokens where id = $TOK")" "t t" "rotation mints a key of the same person and limits and gives the old one 24 hours"
 
 echo "== the kernel's word shuts the doors"

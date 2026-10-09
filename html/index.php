@@ -1,13 +1,20 @@
 <?php
 declare(strict_types=1);
-/** / — home. Phase 0: a placeholder that proves the sign-on landed (who you are, the roles the kernel sent); the shell and the home screen are Phase 2 (docs/build-specs/sso-shell.md). */
+/**
+ * / — Today (screen `home`; sso-shell.md; design §9): my activities due and overdue, my deals closing this month, the flags (no next step,
+ * rotting) as links to the board filtered, replies since yesterday, the morning note; a manager's forecast tile and the leaderboard's top
+ * three; a new person's one button, Add your first lead. JSON: present_home() — whitelisted.
+ */
 require_once dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/features/home/queries.php';
 require_login();
+require_right('records.read');
 $pdo = db();
-$me = current_member();
+$me = (int) current_member_id();
+$tz = member_timezone();
+$s = home_summary($pdo, $me);
 log_screen_view($pdo, 'home');
-$roles = $pdo->query('SELECT r.role_key, r.name FROM crm_roles r WHERE r.role_key = ANY (crm_member_roles(app_current_member_id())) ORDER BY r.sort_order')->fetchAll();
 if (wants_json()) {
-    respond_screen(['member_id' => (int) $me['id'], 'display_name' => $me['display_name'], 'roles' => array_column($roles, 'role_key'), 'phase' => 'Phase 0: the shell is Phase 2']);
+    respond_screen(present_home($s, $tz));
 }
-echo view('home/placeholder.php', ['me' => $me, 'roles' => $roles]);
+render_screen('Today', view('home/index.php', ['s' => $s, 'tz' => $tz]), ['activeNav' => 'home', 'screen' => 'home']);

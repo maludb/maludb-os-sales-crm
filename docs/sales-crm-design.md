@@ -685,6 +685,13 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-09 — PHASE 2 THE SHELL BUILT AND PROVEN, the same day.** Today (the regions of §9 for a Rep and a manager, one button on the empty book),
+the one menu table with its rights, the tab bar Today · Pipeline · Calendar · Log · More, the one search box, the bell, the switcher, the command bar
+through the kernel, My settings with reminders and the signature, tokens, notifications, My activity; eleven placeholders. `tests/phase2/run.sh`:
+271 checks under php -S, 276 under Apache; Phase 0 (173 + 71) and Phase 1 (55) green; the installer's plan clean. **db/018** grants the trail view to
+the application; the write guard now reads the schema's five refusal codes; ROOT_STEPS step 0b enables mod_headers; the kit's sibling leftovers
+fixed — the record is `docs/build-specs/sso-shell.md` "Built and proven". **Next:** slice 1 (accounts and contacts, the CRUD exemplar).
+
 **2026-10-09 — PHASE 1 APPROVED by the owner, as written** ("Approved as written"): the schema db/001–017, the tool surface and the action manifest together, and the
 eleven decisions of `docs/phase1-consistency.md`. The checkpoint gate is open: Phase 2 (`docs/build-specs/sso-shell.md`) begins the same day.
 

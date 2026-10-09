@@ -10,6 +10,8 @@
  *                                         every request is appended to "<state file>.ledger" (the period asked, or "list")
  *   POST /api/v1/notify/sms.php         → K6, as state.sms says (mode = ok | no_sender | not_held | no_verified_phone | opted_out | rate_limited | server_error);
  *                                         every request body is appended to "<state file>.sms" (one JSON line each)
+ *   GET  /api/v1/apps/mine.php          → K31, the switcher's feed: state.apps (an os.my-applications/1 document) for the acting member, else 404 (no kernel to ask);
+ *                                         the acting member is appended to "<state file>.apps"
  * Every call needs Authorization: Bearer $OS_APPLICATION_TOKEN (else 401), like the real one. Never a real kernel.
  */
 $state = json_decode((string) @file_get_contents((string) getenv('FAKE_KERNEL_STATE')), true) ?: [];
@@ -49,6 +51,10 @@ switch ($path) {
         $parts = explode('.', (string) ($input['token'] ?? ''));
         $run = $parts[2] ?? '';
         $out($state['facts'][$run] ?? ['valid' => false]);
+    case '/api/v1/apps/mine.php':
+        file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.apps', ($_SERVER['HTTP_X_ACTING_MEMBER'] ?? '') . "\n", FILE_APPEND);
+        if (!isset($state['apps'])) { $out(['error' => ['code' => 'not_found', 'message' => 'No such internal endpoint.']], 404); }
+        $out(['data' => $state['apps']]);
     case '/api/v1/agents/chat.php':
         file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.chat', json_encode(['agent' => $_GET['agent'] ?? null, 'acting' => $_SERVER['HTTP_X_ACTING_MEMBER'] ?? null, 'utterance' => $input['utterance'] ?? null]) . "\n", FILE_APPEND);
         if (isset($state['chat_status'])) {

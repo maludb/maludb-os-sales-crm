@@ -39,7 +39,7 @@ function db_bool(PDO $pdo, string $sql, array $args = []): bool
 function db_message(Throwable $e, string $fallback): string
 {
     error_log('db error: ' . $e->getMessage());
-    if (!($e instanceof PDOException) || (string) $e->getCode() !== 'P0001') {
+    if (!($e instanceof PDOException) || !in_array((string) $e->getCode(), DB_SENTENCE_CODES, true)) {
         return $fallback;
     }
     $text = $e->getMessage();
@@ -47,9 +47,21 @@ function db_message(Throwable $e, string $fallback): string
     if ($at === false) {
         return $fallback;
     }
-    $text = trim((string) (preg_split('/\R|CONTEXT:/', substr($text, $at + 6))[0] ?? ''));
-    return $text === '' ? $fallback : $text;
+    $text = trim((string) (preg_split('/\R|CONTEXT:|DETAIL:|HINT:/', substr($text, $at + 6))[0] ?? ''));
+    // PostgreSQL's own constraint text is not a sentence for a person: only a trigger's RAISE is (the schema raises sentences)
+    if ($text === '' || preg_match('/violates (check|unique|foreign key|not-null) constraint|duplicate key value|null value in column/i', $text)) {
+        return $fallback;
+    }
+    return $text;
 }
+
+/**
+ * The codes the schema's triggers and functions raise with a sentence for a person (db/007–013): our own RAISE (P0001), a rule refused
+ * (check_violation — 34 of them, a stage's required fields among them), an address another contact holds (unique_violation), a stage
+ * that does not exist (foreign_key_violation), a deal or lead that does not (no_data_found). Found in Phase 2 (2026-10-09): the kit read
+ * only P0001, so every other refusal would have answered 500 (Inventory found the check_violation half the same day).
+ */
+const DB_SENTENCE_CODES = ['P0001', '23514', '23505', '23503', 'P0002'];
 
 /** The first column of the first row, or null. */
 function one_value(PDO $pdo, string $sql, array $args = []): mixed

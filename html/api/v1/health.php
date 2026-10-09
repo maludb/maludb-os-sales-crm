@@ -19,4 +19,7 @@ try {
 if ((string) env('MALUDB_API_URL', '') !== '' && (string) env('MALUDB_API_TOKEN', '') !== '') {
     $out['maludb'] = 'ok';
 }
+// the storage the attachments, imports and exports live in (ROOT_STEPS 2b): wired, written by slices 1, 2 and 6 — it must exist and be writable
+$dir = rtrim((string) (env('CRM_STORAGE_DIR', '') ?: dirname(__DIR__, 3) . '/storage'), '/');
+$out['storage'] = is_dir($dir) && is_writable($dir) ? 'ok' : 'missing';
 api_json($out, $out['ok'] ? 200 : 503);

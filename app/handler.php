@@ -123,11 +123,14 @@ function crm_guard(PDO $pdo, callable $step): mixed
             }
             refuse($m === 'Not found.' ? 404 : 422, $m);
         }
-        if ($e instanceof PDOException && (string) $e->getCode() === 'P0001') {
-            refuse(422, db_message($e, 'That could not be done.'));
+        if ($e instanceof PDOException && in_array((string) $e->getCode(), ['P0001', '23514', '23503'], true)) {
+            refuse(422, db_message($e, 'That could not be done.'));     // our own RAISE, a trigger's rule (check_violation), a missing referent — the schema's sentence
         }
         if ($e instanceof PDOException && (string) $e->getCode() === '23505') {
-            refuse(422, 'That name is already taken.');
+            refuse(422, db_message($e, 'That is already taken.'));       // a trigger's sentence ("Another contact already has the address …"), else generic
+        }
+        if ($e instanceof PDOException && (string) $e->getCode() === 'P0002') {
+            refuse(404, db_message($e, 'Not found.'));
         }
         throw $e;
     }

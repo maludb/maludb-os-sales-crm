@@ -43,15 +43,76 @@ html.app-header-dark .nxl-navigation .m-header .logo-lg, .nxl-navigation .m-head
 /* The slide-in menu rises above the fixed bars and keeps room to scroll past them. */
 @media (max-width: 991.98px) { .nxl-navigation.mob-navigation-active { z-index: 1050; } .nxl-navigation .navbar-content { padding-bottom: 160px; } }
 
+
 /* ==========================================================================
-   Inventory — the phone comes first (design §9: Find, an order and receiving at 375 px). Touch targets are at least 44 px.
-   Cards for named things (products, sources, suppliers, customers); tables for levels, movements, listings and lines.
-   The shell's own rules arrive with Phase 2 (docs/build-specs/sso-shell.md).
+   Sales CRM, Phase 2 (2026-10-09) — the phone comes first (docs/build-specs/sso-shell.md; design §9: the home's Today, a
+   contact's page, the quick-log forms and the agenda at 375 px). The bottom tab bar carries Today, Pipeline, Calendar, Log (a
+   sheet of the quick-log links — a dropup, never a modal) and More (the sidebar as the theme's offcanvas); the sidebar takes
+   over from 992 px (d-lg-none hides the bar). The command bar sits above the tab bar. Touch targets are at least 44 px.
+   Cards for named things (accounts, contacts, leads, deals); tables for ledgers and admin lists.
    ========================================================================== */
+.app-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1031; height: 56px; display: flex; background: var(--bs-body-bg, #fff);
+    border-top: 1px solid rgba(0,0,0,.1); box-shadow: 0 -2px 10px rgba(0,0,0,.05); }
+.app-tabbar .app-tab { flex: 1 1 0; min-width: 0; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--bs-secondary-color, #6c757d); font-size: 11px; font-weight: 600; text-decoration: none; }
+.app-tabbar .app-tab i { font-size: 18px; }
+.app-tabbar .app-tab.active { color: var(--bs-primary, #3454d1); }
+.app-tabbar .app-tab-sheet { flex: 1 1 0; min-width: 0; display: flex; }
+.app-tabbar .app-tab-sheet > .app-tab { width: 100%; }
+.app-tabbar .dropdown-menu { min-width: 220px; }
+.app-tabbar .dropdown-item { min-height: 44px; display: flex; align-items: center; gap: .5rem; }
+html.app-skin-dark .app-tabbar { background: #1b2431; border-top-color: rgba(255,255,255,.1); }
+@media (max-width: 991.98px) { #assistant-bar { bottom: 56px; padding: 8px 12px; } .app-has-tabbar { padding-bottom: 140px; } }
+
+/* The header: the business name, the badge, the one search box, the bell — they share the row with the hamburger and the avatar on a phone. */
+.header-role { min-width: 0; max-width: 44vw; }
+@media (min-width: 992px) { .header-role { max-width: 22rem; } }
+.header-search { width: 18rem; max-width: 30vw; }
+.header-search .form-control { min-height: 38px; }
 .btn-touch, .form-select.btn-touch, .form-control.btn-touch { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 .form-select.btn-touch, .form-control.btn-touch { display: block; }
 label.btn-touch { display: flex; }
 .min-w-0 { min-width: 0; }
 .empty-state { display: flex; align-items: center; gap: 1rem; }
+.empty-state.text-center { flex-direction: column; }        /* a centred empty state (the first-run home) stacks: at 375 px a row pushed its button past the edge */
 .empty-state .avatar-text { flex: 0 0 auto; }
 .coming-card { border-style: dashed; }
+.app-panes { display: flex; align-items: stretch; min-height: 60vh; }
+.app-panes > #page-content { flex: 1 1 auto; min-width: 0; }
+
+/* The next step's four states (Pipedrive's colours, design §6.2): a chip on Today, a card's corner on the board later.
+   overdue red, today amber, scheduled green, none/done muted — the word is always printed beside the colour. */
+.next-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: 11px; font-weight: 600; padding: .15rem .5rem; border-radius: 1rem; white-space: nowrap; }
+.next-chip.next-overdue   { background: rgba(220, 53, 69, .12); color: #b02a37; }
+.next-chip.next-today     { background: rgba(255, 193, 7, .18); color: #8a6d00; }
+.next-chip.next-scheduled { background: rgba(25, 135, 84, .12); color: #146c43; }
+.next-chip.next-done, .next-chip.next-none { background: rgba(108, 117, 125, .12); color: #6c757d; }
+html.app-skin-dark .next-chip.next-today { color: #ffcd39; }
+.today-row { min-height: 44px; }
+.today-row .today-subject { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-tile .home-tile-figure { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+.search-result mark { padding: 0 .1rem; background: rgba(255, 193, 7, .35); }
+
+/* RECORD PICKER (app/picker.php, shared/picker-rows.php, assets/js/record-picker.js): the one modal that chooses a
+   record. The field's button reads as a form control and truncates; the modal keeps its search box pinned, holds a
+   steady height on a desktop and fills the screen on a phone; rows are touch targets with a visible scrollbar. */
+.record-picker-field .record-picker-open { display: flex; align-items: center; min-width: 0; cursor: pointer; }
+.record-picker-field .record-picker-open .record-picker-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-picker-field .record-picker-open:disabled { cursor: default; opacity: 1; }
+#record-picker .record-picker-search { position: sticky; top: 0; z-index: 2; background: var(--bs-modal-bg, #fff); }
+html.app-skin-dark #record-picker .record-picker-search { background: #0f172a; }
+#record-picker .record-picker-row { min-height: 44px; padding-top: .625rem; padding-bottom: .625rem; }
+#record-picker .record-picker-row.active .record-picker-detail, #record-picker .record-picker-row.active .badge { color: inherit !important; }
+#record-picker .record-picker-detail { color: var(--bs-secondary-color); }
+#record-picker-results { min-height: 160px; }
+@media (min-width: 768px) {
+    #record-picker .modal-dialog { max-width: 560px; }
+    #record-picker .modal-content { height: 70vh; }
+}
+
+/* APPLICATION SWITCHER (shared/app-switcher.php, K31): the Helpdesk button is a head link with a word beside the icon;
+   the applications menu lists one row per application (or per scope) with the current one marked, not linked. */
+.nxl-header .header-right .nxl-head-link.header-helpdesk { width: auto; gap: 6px; padding-left: 14px; padding-right: 14px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+.header-apps-menu { min-width: 260px; }
+.header-apps-menu .header-apps-list { max-height: calc(100vh - 260px); overflow-y: auto; }
+.header-apps-menu .dropdown-item.active { background: var(--bs-primary-bg-subtle, rgba(59, 130, 246, .12)); color: inherit; cursor: default; }

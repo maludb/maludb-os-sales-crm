@@ -63,12 +63,14 @@ function ask_assistant(PDO $pdo, int $memberId, string $utterance, array $contex
 /** A tool `{entity}_{verb}` that succeeded refreshes the screens listening for `{entity}Changed` (chat-actions, Pattern D). */
 function assistant_refresh_events(array $actions): array
 {
-    $families = ['product' => 'product', 'variant' => 'product', 'identifier' => 'product', 'bundle' => 'product', 'price' => 'product',
-        'location' => 'location', 'stock' => 'stock', 'receipt' => 'stock', 'transfer' => 'stock', 'adjustment' => 'stock', 'count' => 'stock',
-        'supplier' => 'supplier', 'source' => 'source', 'listing' => 'listing', 'match' => 'listing', 'offer' => 'listing', 'watch' => 'watch',
-        'customer' => 'customer', 'order' => 'order', 'line' => 'order', 'payment' => 'order', 'shipment' => 'order',
-        'purchase' => 'purchase_order', 'po' => 'purchase_order', 'return' => 'return', 'feed' => 'feed', 'key' => 'feed',
-        'settings' => 'settings', 'token' => 'token', 'notification' => 'notification', 'export' => 'export', 'agent' => 'agent', 'buyer' => 'proposal'];
+    $families = ['lead' => 'lead', 'leads' => 'lead', 'account' => 'account', 'contact' => 'contact', 'deal' => 'deal', 'deals' => 'deal', 'product' => 'deal',
+        'activity' => 'activity', 'activities' => 'activity', 'participant' => 'activity', 'meeting' => 'activity', 'call' => 'activity', 'feed' => 'activity',
+        'email' => 'email', 'template' => 'email', 'campaign' => 'campaign', 'list' => 'list', 'bulk' => 'record', 'record' => 'record', 'records' => 'record',
+        'tag' => 'tag', 'note' => 'note', 'attachment' => 'note', 'import' => 'import', 'duplicate' => 'record', 'export' => 'export', 'view' => 'view',
+        'pipeline' => 'pipeline', 'stage' => 'pipeline', 'source' => 'settings', 'lost' => 'settings', 'assignment' => 'settings', 'custom' => 'settings',
+        'mailbox' => 'settings', 'quota' => 'settings', 'settings' => 'settings', 'prefs' => 'prefs', 'signature' => 'prefs', 'token' => 'token', 'key' => 'token',
+        'capture' => 'token', 'notification' => 'notification', 'notifications' => 'notification', 'proposal' => 'proposal', 'next' => 'proposal',
+        'agent' => 'agent', 'dispatch' => 'agent', 'sms' => 'activity', 'report' => 'export'];
     $events = [];
     foreach ($actions as $a) {
         if (($a['status'] ?? '') === 'ok' && preg_match('/^([a-z]+)(?:_[a-z_]+)?$/', (string) ($a['tool'] ?? ''), $m) && isset($families[$m[1]])) {
