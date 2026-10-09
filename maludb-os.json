@@ -151,7 +151,7 @@
     {
       "key": "viewer",
       "name": "Viewer",
-      "description": "Reads everything — every record with amounts, every report, every calendar — and changes nothing. Finance, support, leadership.",
+      "description": "Reads everything \u2014 every record with amounts, every report, every calendar \u2014 and changes nothing. Finance, support, leadership.",
       "capability": "read",
       "is_admin": false,
       "rights": [
@@ -264,27 +264,27 @@
   "shares": [
     {
       "tool": "accounts_index",
-      "description": "Every account the business keeps: id, name, domain, kind, owner, the ledger's id when known, the open and won totals — paged, with `since` (os.sales-crm-accounts/1)",
+      "description": "Every account the business keeps: id, name, domain, kind, owner, the ledger's id when known, the open and won totals \u2014 paged, with `since` (os.sales-crm-accounts/1)",
       "scoped": false
     },
     {
       "tool": "contacts_index",
-      "description": "Contacts by account: id, name, every address, title, role, opt-outs, account id — paged, with `since`; the Help Desk's requester match (os.sales-crm-contacts/1)",
+      "description": "Contacts by account: id, name, every address, title, role, opt-outs, account id \u2014 paged, with `since`; the Help Desk's requester match (os.sales-crm-contacts/1)",
       "scoped": false
     },
     {
       "tool": "deals_won",
-      "description": "Deals won in a period: number, title, account (id, name, the ledger's id), the primary contact, value, currency, products (name, provider id, quantity, unit price, discount), won date, owner — for the General Ledger's customer and invoice, Inventory's order, Consultant Tracking's engagement (os.sales-crm-deals-won/1)",
+      "description": "Deals won in a period: number, title, account (id, name, the ledger's id), the primary contact, value, currency, products (name, provider id, quantity, unit price, discount), won date, owner \u2014 for the General Ledger's customer and invoice, Inventory's order, Consultant Tracking's engagement (os.sales-crm-deals-won/1)",
       "scoped": false
     },
     {
       "tool": "deals_open_by_account",
-      "description": "One account's open deals: number, title, stage, value, weighted, expected close, owner, the next step's date — for a Help Desk ticket or a Spaces card; no bodies, no notes (os.sales-crm-deals-open/1)",
+      "description": "One account's open deals: number, title, stage, value, weighted, expected close, owner, the next step's date \u2014 for a Help Desk ticket or a Spaces card; no bodies, no notes (os.sales-crm-deals-open/1)",
       "scoped": false
     },
     {
       "tool": "account_timeline_summary",
-      "description": "One account's last ten touches (date, kind, subject, who) and its next step — dates and subjects only, never a body or a note (os.sales-crm-timeline/1)",
+      "description": "One account's last ten touches (date, kind, subject, who) and its next step \u2014 dates and subjects only, never a body or a note (os.sales-crm-timeline/1)",
       "scoped": false
     }
   ],
@@ -292,12 +292,12 @@
     {
       "app": "gl",
       "tool": "customer_by_crm_account",
-      "why": "Show the ledger's customer id and balance on the account once a won deal made the customer (G3 — owed by General Ledger); degrades to a blank panel on no_connection"
+      "why": "Show the ledger's customer id and balance on the account once a won deal made the customer (G3 \u2014 owed by General Ledger); degrades to a blank panel on no_connection"
     },
     {
       "app": "gl",
       "tool": "items_index",
-      "why": "The product picker on a deal's lines names the ledger's items (G4 — owed by General Ledger); typed names otherwise"
+      "why": "The product picker on a deal's lines names the ledger's items (G4 \u2014 owed by General Ledger); typed names otherwise"
     },
     {
       "app": "inventory",
@@ -307,7 +307,7 @@
     {
       "app": "helpdesk",
       "tool": "tickets_by_organization",
-      "why": "The account's Tickets tab (HD5 — owed by Help Desk); an empty panel on no_connection"
+      "why": "The account's Tickets tab (HD5 \u2014 owed by Help Desk); an empty panel on no_connection"
     }
   ],
   "agents": [
@@ -525,20 +525,92 @@
   ],
   "approvals": [
     {
+      "action": "agents_settings_save",
+      "category": "other"
+    },
+    {
+      "action": "assignment_rules_save",
+      "category": "other"
+    },
+    {
+      "action": "attachment_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "bulk_assign",
+      "category": "other"
+    },
+    {
+      "action": "bulk_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "bulk_update",
+      "category": "other"
+    },
+    {
+      "action": "campaign_email_send",
+      "category": "external_send"
+    },
+    {
+      "action": "capture_key_mint",
+      "category": "other"
+    },
+    {
+      "action": "custom_field_save",
+      "category": "other"
+    },
+    {
+      "action": "deal_reopen",
+      "category": "other"
+    },
+    {
       "action": "email_send",
       "category": "external_send"
     },
     {
-      "action": "sms_send",
-      "category": "external_send"
+      "action": "import_rollback",
+      "category": "deletion"
+    },
+    {
+      "action": "key_mint",
+      "category": "other"
+    },
+    {
+      "action": "lead_dismiss_proposed",
+      "category": "deletion"
+    },
+    {
+      "action": "list_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "lost_reason_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "mailbox_save",
+      "category": "other"
     },
     {
       "action": "meeting_invite_send",
       "category": "external_send"
     },
     {
-      "action": "campaign_email_send",
-      "category": "external_send"
+      "action": "note_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "pipeline_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "pipeline_save",
+      "category": "other"
+    },
+    {
+      "action": "quota_set",
+      "category": "other"
     },
     {
       "action": "record_delete",
@@ -553,7 +625,15 @@
       "category": "deletion"
     },
     {
-      "action": "pipeline_delete",
+      "action": "settings_save",
+      "category": "other"
+    },
+    {
+      "action": "sms_send",
+      "category": "external_send"
+    },
+    {
+      "action": "source_delete",
       "category": "deletion"
     },
     {
@@ -561,27 +641,7 @@
       "category": "deletion"
     },
     {
-      "action": "campaign_delete",
-      "category": "deletion"
-    },
-    {
-      "action": "list_delete",
-      "category": "deletion"
-    },
-    {
-      "action": "import_rollback",
-      "category": "deletion"
-    },
-    {
-      "action": "bulk_delete",
-      "category": "deletion"
-    },
-    {
-      "action": "settings_save",
-      "category": "other"
-    },
-    {
-      "action": "pipeline_save",
+      "action": "stage_reorder",
       "category": "other"
     },
     {
@@ -589,40 +649,12 @@
       "category": "other"
     },
     {
-      "action": "assignment_rules_save",
-      "category": "other"
+      "action": "tag_delete",
+      "category": "deletion"
     },
     {
-      "action": "custom_field_save",
-      "category": "other"
-    },
-    {
-      "action": "mailbox_save",
-      "category": "other"
-    },
-    {
-      "action": "agents_settings_save",
-      "category": "other"
-    },
-    {
-      "action": "bulk_assign",
-      "category": "other"
-    },
-    {
-      "action": "bulk_update",
-      "category": "other"
-    },
-    {
-      "action": "deal_reopen",
-      "category": "other"
-    },
-    {
-      "action": "quota_set",
-      "category": "other"
-    },
-    {
-      "action": "key_mint",
-      "category": "other"
+      "action": "template_delete",
+      "category": "deletion"
     }
   ]
 }

@@ -685,6 +685,17 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-09 — PHASE 1 WRITTEN, the same day, for the owner's checkpoint.** `docs/sales-crm-mcp-tool-surface.md` (72 records tools incl. the five shares reading
+`X-OS-Consumer`, 7 activity tools, 17 resolver entities, the records API and the capture route, the activity vocabulary), `docs/sales-crm-action-manifest.md`
+(84 screens, 121 actions, 33 paused — 5 `external_send`, 13 `deletion`, 15 `other`; 15 people-only) and `mcp/action_registry.json` built from it
+(`bin/build_action_registry.php --check` green, `bin/sync_approvals.php` rewrote `maludb-os.json` `approvals[]` from the manifest: 33 in sync), the three build specs
+(`docs/build-specs/pipeline-board.md`, `activities-calendar.md`, `leads-and-conversion.md`), ten slice specs (`sso-shell` + nine; `deals-board` and
+`activities-reminders` THE EXEMPLARS), `tests/phase1/check_specs.sh` (55 checks: every manifest row claimed once, every tool named, every approval a manifest
+action), `docs/phase1-consistency.md` (eleven decisions taken in the specs for the owner to confirm); **db/017** adds the reads Phase 1 asked for (`crm_calendar`,
+`crm_my_activities`, `crm_lost_reasons_summary`, `crm_products_pipeline`, `duplicate_dismissals` + `crm_duplicates_open`, and the five `crm_share_*` functions as the
+application) — the Phase 0 proof re-run green (173). **Next:** the owner's approval of the schema, the surface and the manifest together → Phase 2 (`sso-shell.md`) →
+slice 1 → slice 2 → slice 3 (THE FIRST EXEMPLAR) → slice 4 (THE SECOND) — the handoff point to Sonnet 5.5.
+
 **2026-10-09 — PHASE 0 COMPLETE, the same day as the plan.** K32 built as the kernel's db/177 (the catalog row under Sales & Service, category `crm`,
 applied). The schema `db/001`–`016`: the kit's five from DocCloud (dc_ → crm_; `members.email_signature` appended; the five audit keys
 lead/account/contact/deal/token; five roles and forty-one rights; `crm_settings` with the design's defaults; keys with the lead-capture limit),
