@@ -1,0 +1,10 @@
+[Unit]
+Description=Sales CRM activity log -> the tenant's MaluDB (one pass)
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory={{APP_DIR}}
+ExecStart={{APP_DIR}}/mcp/venv/bin/python {{APP_DIR}}/mcp/activity_ingest.py

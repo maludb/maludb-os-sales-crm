@@ -685,6 +685,42 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-09 — PHASE 0 COMPLETE, the same day as the plan.** K32 built as the kernel's db/177 (the catalog row under Sales & Service, category `crm`,
+applied). The schema `db/001`–`016`: the kit's five from DocCloud (dc_ → crm_; `members.email_signature` appended; the five audit keys
+lead/account/contact/deal/token; five roles and forty-one rights; `crm_settings` with the design's defaults; keys with the lead-capture limit),
+`006` the vocabularies (sources, lost reasons, Help Desk's `tags` + `record_tags`, `custom_field_defs` with typed validation, GL's
+`document_sequences`), `007` accounts, contacts, `contact_emails` and THE WALL (`crm_wall` inlined per row: open by default, a restriction to the
+owner and a department, managers everything; `crm_duplicates`; `crm_touch`), `008` pipelines and stages (two seeded), deals with the required-fields
+rule refusing a move by name, status from the stage's kind, weighted value from the stage or the override, value from the product lines, every
+move a history row, the account's counters and kind and the contact's lifecycle by trigger, `crm_deal_move`, rotting, quotas, `009` leads with the
+assignment rules (member, department, round-robin) and `crm_lead_convert` (find by domain and name, by email; make; the deal in the default
+pipeline's first stage; one transaction; read-only after), `010` activities with the reminder as columns (`remind_at`, `reminded_at`,
+`snoozed_until`), `next_activity_at` kept on deals, contacts, accounts and leads, the four colours, `crm_reminders_due`, the ICS rows, txtSchedules'
+`calendar_feeds`, `011` Help Desk's mail tables reused with the matcher `crm_match_inbound_email` (the sender a member, the deal by thread then by
+the subject's tag, contacts by every address, strangers as proposed leads, bounces nothing), templates with merge fields, opt-outs, `012` campaigns,
+lists (static by trigger, smart by filter), Help Desk's `saved_views` with six system views, Spaces' `imports`/`exports`/`worker_passes`,
+`013` GL's `notes`/`attachments`, Spaces' notifications with `crm_notify` and `crm_deliver_reminder`, `agent_dispatches` (an ask-the-Assistant
+stage dispatches), `assistant_proposals` with `crm_proposal_accept` (one click → the activity), THE MERGE `crm_records_merge` (contacts, accounts,
+leads: every child re-pointed, the loser a tombstone), the tombstone and `crm_tombstones_purge`, `014` Spaces' `search_index` with the four kinds,
+`crm_search` (websearch + word-trigram, the wall per row), `015` the reads of §7 (`crm_pipeline_summary`, `crm_forecast`, `crm_funnel`,
+`crm_win_rate`, `crm_deals_at_risk`, `crm_untouched`, `crm_leads_untouched`, `crm_upcoming_dates`, `crm_activity_summary`, `crm_leaderboard`,
+`crm_source_performance`, `crm_campaign_results`, `crm_timeline`, `crm_touches_to_win`, `crm_stage_requirements_check`), `016` forty-one `mcp_*`
+views. **Proven** by `db/proof/phase0_proof.sql` (**173 checks**, rolled back: every actor and role, the seeded book, accounts and contacts with
+duplicates and custom fields, the rules routing leads, the conversion finding and making, the board's refusals and moves, won and lost and
+reopen, products, rotting, the four colours, a reminder delivered, snoozed and delivered again, done moving the next step, a proposal accepted,
+the mailbox matching two contacts and a deal, a reply by thread, a stranger proposed, a bounce ignored, the opt-out, campaigns and lists, the
+merge, the tombstone and the purge, THE WALL for eight actors, private email, keys, the search, the reused tables verbatim against their
+siblings, the read roles seeing views only) and by the kit without a kernel (`tests/phase0/run.sh`, **71 checks**: the mirror, roles, sign-on with
+every refusal, CSRF, the funnel with the new keys, keys and rates, the kernel's sign-out, the change feed, the worker's empty pass, the ingest
+bridge). `maludb-os.json` (five roles, two agents — the Assistant with the duty `30 6 * * 1-5` —, 25 approvals, five shares, four reads, seven
+endpoints), `os/{expert,assistant}.md`, nine skills (five runbooks), `deploy/` with `ROOT_STEPS.sh` (the ports, the storage directory, the
+mailbox as the one manual step); the plugin's `shared-schema.md` catalogue gained the new canonical tables; **the installer's `plan` reads
+clean** (36 steps; the ports unfilled until step 0 pins them, as every sibling). Found on the way: a proof that runs an action and inspects the
+result in one expression evaluates the subquery first (Spaces' and DocCloud's lesson, met again — `keep` the result, then check); `position`
+is reserved in a RETURNS TABLE; a reopen must clear the lost reason only on a reopen, never when a reason is set before the move; a short
+misspelling finds a long name by `word_similarity`, not `similarity`. **Next:** Phase 1 (the tool surface, the action manifest, the three build
+specs, ten slice specs) for the owner's approval → Phase 2 → slices 1–2 → the exemplars (3 the board, 4 the calendar) → the handoff to Sonnet 5.5.
+
 **2026-10-09 — APPROVED the same day (§15: D1–D16 and (a)–(c), every recommendation), walked through one by one with the owner.**
 **Next:** K32 (kernel db/177, the catalog row under Sales & Service, category `crm`) → Phase 0 → Phase 1 for approval → Phase 2 → slices 1–2 → the exemplars (slices 3 and 4) → the handoff to Sonnet 5.5.
 

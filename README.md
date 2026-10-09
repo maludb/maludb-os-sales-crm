@@ -9,4 +9,4 @@ Sales Assistant (the weekday morning note and next-step proposals).
 Built with the `htmx-php-builder` plugin (`maludb-os-htmx-php-guidelines`) and fitted to the kernel by `maludb-os-integration`.
 Installed by the kernel's installer at `/srv/apps/sales_crm`, served as `crm.<domain>`; catalog key `sales_crm`.
 
-**State (2026-10-09):** planned and approved (`docs/sales-crm-design.md`, §15: D1–D16 and (a)–(c), every recommendation). Phase 0 next; nothing is built yet.
+**State (2026-10-09):** Phase 0 COMPLETE (schema db/001–016 proven by 173 checks, the kit by 71; `maludb-os.json`, the two agents, nine skills, `deploy/`; the installer's plan clean). Phase 1 next. See `docs/sales-crm-design.md` §16.

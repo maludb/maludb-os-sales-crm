@@ -1,0 +1,25 @@
+{
+  "schema": "maludb-os.registry/1",
+  "app_key": "sales_crm",
+  "name": "Sales CRM",
+  "note": "The installer (bin/app_install.php, step 'registry') writes mcp/registries/sales_crm.json in the kernel from this file's `resolve` block plus mcp/action_registry.json (Phase 1). Each resolve tool answers a plain LIST of rows carrying id_field and label_field when given `q` alone (docs/sales-crm-mcp-tool-surface.md, the resolution table). The tools are the Phase 1 tool surface's names; Phase 4 builds them (mcp/records_server.py). Activity, email, note, attachment, import, proposal, dispatch, notification and token ids are ids only, never resolved by name. A repeated param (tags, members, contacts) is never resolved.",
+  "resolve": {
+    "lead":       {"tool": "find_leads",      "query_param": "q", "id_field": "lead_id",      "label_field": "label",        "params": ["lead"]},
+    "account":    {"tool": "find_accounts",   "query_param": "q", "id_field": "account_id",   "label_field": "name",         "params": ["account", "company", "parent_account"]},
+    "contact":    {"tool": "find_contacts",   "query_param": "q", "id_field": "contact_id",   "label_field": "name",         "params": ["contact", "person", "primary_contact"]},
+    "deal":       {"tool": "find_deals",      "query_param": "q", "id_field": "deal_id",      "label_field": "title",        "params": ["deal", "opportunity"]},
+    "pipeline":   {"tool": "find_pipelines",  "query_param": "q", "id_field": "pipeline_id",  "label_field": "name",         "params": ["pipeline"]},
+    "stage":      {"tool": "find_stages",     "query_param": "q", "id_field": "stage_id",     "label_field": "name",         "params": ["stage", "to_stage"]},
+    "activity":   {"tool": "find_activities", "query_param": "q", "id_field": "activity_id",  "label_field": "subject",      "params": ["activity", "task", "meeting", "call"]},
+    "campaign":   {"tool": "find_campaigns",  "query_param": "q", "id_field": "campaign_id",  "label_field": "name",         "params": ["campaign"]},
+    "list":       {"tool": "find_lists",      "query_param": "q", "id_field": "list_id",      "label_field": "name",         "params": ["list", "segment"]},
+    "template":   {"tool": "find_templates",  "query_param": "q", "id_field": "template_id",  "label_field": "name",         "params": ["template"]},
+    "source":     {"tool": "find_sources",    "query_param": "q", "id_field": "source_id",    "label_field": "name",         "params": ["source", "lead_source"]},
+    "lost_reason":{"tool": "find_lost_reasons","query_param": "q","id_field": "lost_reason_id","label_field": "label",       "params": ["lost_reason", "reason"]},
+    "tag":        {"tool": "find_tags",       "query_param": "q", "id_field": "tag_id",       "label_field": "label",        "params": ["tag"]},
+    "saved_view": {"tool": "saved_views",     "query_param": "q", "id_field": "saved_view_id","label_field": "name",         "params": ["saved_view", "view"]},
+    "api_key":    {"tool": "find_keys",       "query_param": "q", "id_field": "key_id",       "label_field": "label",        "params": ["api_key"]},
+    "member":     {"tool": "find_members",    "query_param": "q", "id_field": "member_id",    "label_field": "display_name", "params": ["member", "person_member", "owner", "assignee", "seller", "agent", "new_owner", "who"]},
+    "department": {"tool": "find_departments","query_param": "q", "id_field": "department_id","label_field": "name",         "params": ["department", "team"]}
+  }
+}

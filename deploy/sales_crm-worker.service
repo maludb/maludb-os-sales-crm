@@ -1,0 +1,10 @@
+[Unit]
+Description=Sales CRM worker: reminders due, the outbox, the mail poll and the matcher, rotting and next-step flags, smart-list counts, the search index catch-up, imports and exports, recurring tasks, tombstone purge, dispatches, key-usage pruning (one pass)
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory={{APP_DIR}}
+ExecStart=/usr/bin/php {{APP_DIR}}/bin/worker.php

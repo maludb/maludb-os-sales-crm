@@ -1,0 +1,628 @@
+{
+  "schema": "maludb-os.application/1",
+  "catalog_key": "sales_crm",
+  "name": "Sales CRM",
+  "description": "Prospecting and customer relationship management: leads worked and converted into accounts, contacts and deals; every company and person with one timeline of calls, emails, meetings and notes; deals moved through pipelines on a kanban board that shows the sales cycle, with the next step on every card; a reminder calendar of the work to do; email logged by a BCC address and sent with templates; campaigns, lists, imports and the forecast, funnel and activity reports a sales manager runs a team by. The Sales CRM Expert works the command bar; the Sales Assistant writes each seller's weekday morning note and proposes the next step on every deal that lacks one.",
+  "business_area": "Sales & Service",
+  "category": "crm",
+  "icon": "feather-target",
+  "version": "0.1.0",
+  "criticality": "medium",
+  "vhost": {
+    "label": "crm",
+    "document_root": "html",
+    "internal_port_env": "APP_INTERNAL_PORT"
+  },
+  "database": {
+    "suffix": "sales_crm",
+    "migrations": "db",
+    "roles": {
+      "rw": "sales_crm_rw",
+      "records_ro": "sales_crm_records_ro",
+      "activity_ro": "sales_crm_activity_ro"
+    }
+  },
+  "env": {
+    "required": [
+      "APP_NAME",
+      "APP_URL",
+      "DB_HOST",
+      "DB_PORT",
+      "DB_NAME",
+      "DB_USER",
+      "DB_PASSWORD",
+      "MCP_RECORDS_DB_USER",
+      "MCP_RECORDS_DB_PASSWORD",
+      "MCP_ACTIVITY_DB_USER",
+      "MCP_ACTIVITY_DB_PASSWORD",
+      "APP_INTERNAL_PORT",
+      "MCP_RECORDS_PORT",
+      "MCP_ACTIVITY_PORT",
+      "ACTION_TOKEN_KEY",
+      "ACTIONS_RELAY_KEY",
+      "OS_APPLICATION_TOKEN",
+      "OS_INTERNAL_URL",
+      "OS_LAUNCHER_URL",
+      "APP_KEY",
+      "MALUDB_API_URL",
+      "MALUDB_API_TOKEN"
+    ],
+    "optional": [
+      "MALUMAIL_API_KEY",
+      "MAIL_FROM",
+      "MAIL_FROM_NAME",
+      "MAILBOX_CRM_WEBHOOK_SECRET",
+      "CRM_STORAGE_DIR",
+      "CRM_MAX_IMPORT_ROWS"
+    ]
+  },
+  "services": [
+    "deploy/sales_crm-records-mcp.service",
+    "deploy/sales_crm-activity-mcp.service",
+    "deploy/sales_crm-activity-ingest.service",
+    "deploy/sales_crm-activity-ingest.timer",
+    "deploy/sales_crm-directory-sync.service",
+    "deploy/sales_crm-directory-sync.timer",
+    "deploy/sales_crm-worker.service",
+    "deploy/sales_crm-worker.timer"
+  ],
+  "endpoints": [
+    {
+      "name": "Web UI",
+      "kind": "ui",
+      "path": "/",
+      "auth_kind": "none",
+      "agent_reachable": false
+    },
+    {
+      "name": "Health",
+      "kind": "http_api",
+      "path": "/api/v1/health",
+      "auth_kind": "none",
+      "agent_reachable": false
+    },
+    {
+      "name": "Calendar feed (ICS)",
+      "kind": "http_api",
+      "path": "/api/v1/calendar.ics",
+      "auth_kind": "none",
+      "agent_reachable": false
+    },
+    {
+      "name": "Mailbox webhook",
+      "kind": "http_api",
+      "path": "/channels/malumail/mail",
+      "auth_kind": "none",
+      "agent_reachable": false
+    },
+    {
+      "name": "Records API",
+      "kind": "http_api",
+      "path": "/api/v1/",
+      "auth_kind": "bearer",
+      "agent_reachable": false
+    },
+    {
+      "name": "Records MCP",
+      "kind": "mcp",
+      "path": "/mcp/records",
+      "auth_kind": "bearer",
+      "agent_reachable": true,
+      "mcp_surface_version": 1
+    },
+    {
+      "name": "Activity MCP",
+      "kind": "mcp",
+      "path": "/mcp/activity",
+      "auth_kind": "bearer",
+      "agent_reachable": true,
+      "mcp_surface_version": 1
+    }
+  ],
+  "actions": {
+    "manifest": "docs/sales-crm-action-manifest.md",
+    "registry": "mcp/action_registry.json",
+    "base_url_env": "APP_INTERNAL_PORT"
+  },
+  "skills": [
+    "skills/sales-crm-basics",
+    "skills/activity-based-selling",
+    "skills/qualifying-a-lead",
+    "skills/reading-the-pipeline",
+    "skills/morning-note",
+    "skills/propose-the-next-step",
+    "skills/log-a-call-from-dictation",
+    "skills/convert-a-lead-into-a-deal",
+    "skills/find-and-merge-duplicates"
+  ],
+  "sso": {
+    "path": "/sso",
+    "logout_path": "/sso/logout"
+  },
+  "directory": {
+    "reads": true,
+    "writes": false
+  },
+  "assistant": {
+    "command_bar": true,
+    "agent": "expert"
+  },
+  "roles": [
+    {
+      "key": "viewer",
+      "name": "Viewer",
+      "description": "Reads everything — every record with amounts, every report, every calendar — and changes nothing. Finance, support, leadership.",
+      "capability": "read",
+      "is_admin": false,
+      "rights": [
+        "records.read",
+        "calendar.read"
+      ]
+    },
+    {
+      "key": "user",
+      "name": "Sales Rep",
+      "description": "A seller: their leads, accounts, contacts and deals and everyone else's (open by default); logs activities, moves their deals, sends logged email, runs their calendar, imports into their own lists.",
+      "capability": "write",
+      "is_admin": false,
+      "rights": [
+        "records.read",
+        "calendar.read",
+        "leads.write",
+        "leads.convert",
+        "accounts.write",
+        "contacts.write",
+        "deals.write",
+        "activities.write",
+        "email.log",
+        "email.send",
+        "tags.apply",
+        "lists.own",
+        "imports.own",
+        "export.own",
+        "calendar.own"
+      ]
+    },
+    {
+      "key": "marketing",
+      "name": "Marketing",
+      "description": "Leads, sources, campaigns, lists, segments, imports and the shared templates; deals and activities read-only.",
+      "capability": "write",
+      "is_admin": false,
+      "rights": [
+        "records.read",
+        "calendar.read",
+        "leads.write",
+        "leads.assign",
+        "sources.manage",
+        "campaigns.manage",
+        "lists.own",
+        "lists.shared",
+        "imports.own",
+        "imports.shared",
+        "templates.manage",
+        "tags.apply",
+        "tags.manage",
+        "export.own",
+        "export.shared",
+        "calendar.own"
+      ]
+    },
+    {
+      "key": "manager",
+      "name": "Sales Manager",
+      "description": "Runs a team: anyone's deals and activities, reassigns, reopens, merges, bulk-edits, restricts; owns pipelines, stages, rules, quotas and lost reasons; every report; the team calendar.",
+      "capability": "write",
+      "is_admin": false,
+      "rights": [
+        "records.read",
+        "calendar.read",
+        "leads.write",
+        "leads.convert",
+        "leads.assign",
+        "accounts.write",
+        "contacts.write",
+        "deals.write",
+        "deals.any",
+        "activities.write",
+        "activities.any",
+        "email.log",
+        "email.send",
+        "templates.manage",
+        "tags.apply",
+        "tags.manage",
+        "lists.own",
+        "lists.shared",
+        "campaigns.manage",
+        "sources.manage",
+        "imports.own",
+        "imports.shared",
+        "export.own",
+        "export.shared",
+        "records.restrict",
+        "records.merge",
+        "records.bulk",
+        "pipelines.manage",
+        "assignment.rules",
+        "reports.team",
+        "calendar.own",
+        "calendar.team",
+        "quotas.manage"
+      ]
+    },
+    {
+      "key": "admin",
+      "name": "CRM admin",
+      "description": "Every right: settings, custom fields, the logging mailbox, the agents' settings, keys and the API, purge, costs. A super-admin holds this role.",
+      "capability": "admin",
+      "is_admin": true,
+      "rights": [
+        "*"
+      ]
+    }
+  ],
+  "shares": [
+    {
+      "tool": "accounts_index",
+      "description": "Every account the business keeps: id, name, domain, kind, owner, the ledger's id when known, the open and won totals — paged, with `since` (os.sales-crm-accounts/1)",
+      "scoped": false
+    },
+    {
+      "tool": "contacts_index",
+      "description": "Contacts by account: id, name, every address, title, role, opt-outs, account id — paged, with `since`; the Help Desk's requester match (os.sales-crm-contacts/1)",
+      "scoped": false
+    },
+    {
+      "tool": "deals_won",
+      "description": "Deals won in a period: number, title, account (id, name, the ledger's id), the primary contact, value, currency, products (name, provider id, quantity, unit price, discount), won date, owner — for the General Ledger's customer and invoice, Inventory's order, Consultant Tracking's engagement (os.sales-crm-deals-won/1)",
+      "scoped": false
+    },
+    {
+      "tool": "deals_open_by_account",
+      "description": "One account's open deals: number, title, stage, value, weighted, expected close, owner, the next step's date — for a Help Desk ticket or a Spaces card; no bodies, no notes (os.sales-crm-deals-open/1)",
+      "scoped": false
+    },
+    {
+      "tool": "account_timeline_summary",
+      "description": "One account's last ten touches (date, kind, subject, who) and its next step — dates and subjects only, never a body or a note (os.sales-crm-timeline/1)",
+      "scoped": false
+    }
+  ],
+  "reads": [
+    {
+      "app": "gl",
+      "tool": "customer_by_crm_account",
+      "why": "Show the ledger's customer id and balance on the account once a won deal made the customer (G3 — owed by General Ledger); degrades to a blank panel on no_connection"
+    },
+    {
+      "app": "gl",
+      "tool": "items_index",
+      "why": "The product picker on a deal's lines names the ledger's items (G4 — owed by General Ledger); typed names otherwise"
+    },
+    {
+      "app": "inventory",
+      "tool": "availability_index",
+      "why": "The product picker on a deal's lines names Inventory's variants with our retail (built); typed names otherwise"
+    },
+    {
+      "app": "helpdesk",
+      "tool": "tickets_by_organization",
+      "why": "The account's Tickets tab (HD5 — owed by Help Desk); an empty panel on no_connection"
+    }
+  ],
+  "agents": [
+    {
+      "key": "expert",
+      "job_description": "os/expert.md",
+      "access_capability": "write",
+      "hired_on_install": true,
+      "roles": [
+        "user"
+      ],
+      "tool_grants": {
+        "Records MCP": [
+          "find_leads",
+          "get_lead",
+          "leads_inbox",
+          "find_accounts",
+          "get_account",
+          "account_contacts",
+          "account_deals",
+          "find_contacts",
+          "get_contact",
+          "contact_emails",
+          "find_deals",
+          "get_deal",
+          "deal_history",
+          "deal_products",
+          "deal_contacts",
+          "find_pipelines",
+          "find_stages",
+          "pipeline_summary",
+          "forecast",
+          "funnel",
+          "win_rate",
+          "cycle_time",
+          "deals_at_risk",
+          "deals_without_next_step",
+          "deals_rotting",
+          "leaderboard",
+          "stage_requirements_check",
+          "find_activities",
+          "get_activity",
+          "my_activities",
+          "calendar",
+          "activity_summary",
+          "reminders_due",
+          "upcoming_dates",
+          "accounts_untouched",
+          "contacts_untouched",
+          "leads_untouched",
+          "find_emails",
+          "get_email",
+          "emails_unmatched",
+          "proposed_leads",
+          "find_templates",
+          "find_campaigns",
+          "get_campaign",
+          "campaign_results",
+          "campaign_members",
+          "find_lists",
+          "list_members",
+          "segment_preview",
+          "find_sources",
+          "find_lost_reasons",
+          "lost_reasons_summary",
+          "source_performance",
+          "find_tags",
+          "find_duplicates",
+          "saved_views",
+          "find_notes",
+          "find_attachments",
+          "assistant_proposals",
+          "find_members",
+          "find_departments",
+          "settings_catalogue",
+          "timeline",
+          "record_history",
+          "search",
+          "touches_to_win"
+        ],
+        "Activity MCP": [
+          "record_history",
+          "recent_activity",
+          "actor_history",
+          "activity_search"
+        ],
+        "Actions MCP": [
+          "lead_create",
+          "lead_update",
+          "lead_qualify",
+          "lead_unqualify",
+          "lead_convert",
+          "lead_assign",
+          "account_create",
+          "account_update",
+          "contact_create",
+          "contact_update",
+          "contact_opt_out",
+          "deal_create",
+          "deal_update",
+          "deal_move",
+          "deal_won",
+          "deal_lost",
+          "deal_product_add",
+          "deal_product_remove",
+          "deal_contact_add",
+          "deal_contact_remove",
+          "activity_create",
+          "activity_complete",
+          "activity_reschedule",
+          "activity_snooze",
+          "activity_assign",
+          "note_add",
+          "tag_apply",
+          "tag_remove",
+          "list_add",
+          "list_remove",
+          "campaign_member_add",
+          "email_log",
+          "email_draft",
+          "email_send",
+          "saved_view_save",
+          "proposal_accept",
+          "proposal_dismiss"
+        ]
+      },
+      "skills": [
+        "skills/sales-crm-basics",
+        "skills/activity-based-selling",
+        "skills/qualifying-a-lead",
+        "skills/reading-the-pipeline",
+        "skills/log-a-call-from-dictation",
+        "skills/convert-a-lead-into-a-deal",
+        "skills/propose-the-next-step"
+      ]
+    },
+    {
+      "key": "assistant",
+      "job_description": "os/assistant.md",
+      "access_capability": "write",
+      "hired_on_install": true,
+      "roles": [
+        "user"
+      ],
+      "duty": {
+        "name": "The weekday morning note",
+        "schedule_cron": "30 6 * * 1-5"
+      },
+      "tool_grants": {
+        "Records MCP": [
+          "find_leads",
+          "get_lead",
+          "leads_inbox",
+          "find_accounts",
+          "get_account",
+          "account_deals",
+          "find_contacts",
+          "get_contact",
+          "find_deals",
+          "get_deal",
+          "deal_history",
+          "find_pipelines",
+          "find_stages",
+          "pipeline_summary",
+          "forecast",
+          "funnel",
+          "win_rate",
+          "deals_at_risk",
+          "deals_without_next_step",
+          "deals_rotting",
+          "leaderboard",
+          "find_activities",
+          "my_activities",
+          "calendar",
+          "activity_summary",
+          "upcoming_dates",
+          "accounts_untouched",
+          "contacts_untouched",
+          "leads_untouched",
+          "find_emails",
+          "emails_unmatched",
+          "proposed_leads",
+          "find_templates",
+          "source_performance",
+          "find_duplicates",
+          "assistant_proposals",
+          "find_members",
+          "find_departments",
+          "timeline",
+          "touches_to_win"
+        ],
+        "Activity MCP": [
+          "record_history",
+          "recent_activity"
+        ],
+        "Actions MCP": [
+          "next_step_propose",
+          "lead_qualify_propose",
+          "email_draft",
+          "duplicate_propose",
+          "notification",
+          "message_send"
+        ]
+      },
+      "skills": [
+        "skills/sales-crm-basics",
+        "skills/activity-based-selling",
+        "skills/reading-the-pipeline",
+        "skills/qualifying-a-lead",
+        "skills/morning-note",
+        "skills/propose-the-next-step",
+        "skills/find-and-merge-duplicates"
+      ]
+    }
+  ],
+  "approvals": [
+    {
+      "action": "email_send",
+      "category": "external_send"
+    },
+    {
+      "action": "sms_send",
+      "category": "external_send"
+    },
+    {
+      "action": "meeting_invite_send",
+      "category": "external_send"
+    },
+    {
+      "action": "campaign_email_send",
+      "category": "external_send"
+    },
+    {
+      "action": "record_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "records_merge",
+      "category": "deletion"
+    },
+    {
+      "action": "records_purge",
+      "category": "deletion"
+    },
+    {
+      "action": "pipeline_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "stage_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "campaign_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "list_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "import_rollback",
+      "category": "deletion"
+    },
+    {
+      "action": "bulk_delete",
+      "category": "deletion"
+    },
+    {
+      "action": "settings_save",
+      "category": "other"
+    },
+    {
+      "action": "pipeline_save",
+      "category": "other"
+    },
+    {
+      "action": "stage_save",
+      "category": "other"
+    },
+    {
+      "action": "assignment_rules_save",
+      "category": "other"
+    },
+    {
+      "action": "custom_field_save",
+      "category": "other"
+    },
+    {
+      "action": "mailbox_save",
+      "category": "other"
+    },
+    {
+      "action": "agents_settings_save",
+      "category": "other"
+    },
+    {
+      "action": "bulk_assign",
+      "category": "other"
+    },
+    {
+      "action": "bulk_update",
+      "category": "other"
+    },
+    {
+      "action": "deal_reopen",
+      "category": "other"
+    },
+    {
+      "action": "quota_set",
+      "category": "other"
+    },
+    {
+      "action": "key_mint",
+      "category": "other"
+    }
+  ]
+}

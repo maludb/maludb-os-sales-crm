@@ -1,0 +1,10 @@
+[Unit]
+Description=Sales CRM directory <- the kernel's change feed (one pass; a notification-prefs row per new member)
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory={{APP_DIR}}
+ExecStart=/usr/bin/php {{APP_DIR}}/bin/directory_sync.php
