@@ -67,8 +67,9 @@ let lead, imp, a, b;
   await page.fill('#convert-form-field-value', '18000');
   await page.screenshot({ path: `${SHOTS}/desktop-convert.png` });
   await page.click('#convert-form-save-btn');
-  await page.waitForURL(/\/contacts\/\d+\?notice=converted/);
-  ok((await page.locator('#contact-view-account-link').innerText()).includes(`Grace Co ${X}`), 'converting lands on the new contact, at the new account (the deal page is slice 3\'s)');
+  await page.waitForURL(/\/(deals|contacts)\/\d+\?notice=converted/);
+  const onDeal = /\/deals\//.test(page.url());                                   // the deal page from slice 3 on; the contact's before
+  ok((await page.locator(onDeal ? '#deal-view-account' : '#contact-view-account-link').innerText()).includes(`Grace Co ${X}`), 'converting lands on the new deal (the contact before slice 3), at the new account');
   await page.goto(BASE + `/leads/${lead}`, { waitUntil: 'networkidle' });
   ok((await page.locator('#lead-converted-account').count()) === 1 && (await page.locator('#lead-converted-deal').count()) === 1 && (await page.locator('#lead-edit-btn').count()) === 0, 'the lead now shows its three records as cards and no Edit');
 

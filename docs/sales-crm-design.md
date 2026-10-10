@@ -685,6 +685,11 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-10 — SLICE 3 PIPELINES, DEALS AND THE BOARD (THE FIRST EXEMPLAR) BUILT AND PROVEN.** 9 screens and 15 actions; the board with the drag, the
+poll and the no-JS move; the list and the forecast over the same query; the deal page with the stage bar; won, lost, reopen, reassign; product lines and
+people with roles; saved views. `tests/phase3/slice3/run.sh`: 191 checks under php -S and under Apache; slices 1–2, Phase 2, Phase 0 and Phase 1 re-run green.
+The record: `docs/build-specs/deals-board.md` "Built and proven". **Next:** slice 4, activities and reminders (THE SECOND EXEMPLAR).
+
 **2026-10-10 — SLICE 2 LEADS, CONVERSION, THE INBOX, IMPORT, DUPLICATES AND MERGE BUILT AND PROVEN.** 11 screens and 15 actions; the worker's `imports` and
 `search_catch_up` passes real. `tests/phase3/slice2/run.sh`: 202 checks under php -S and under Apache; slice 1, Phase 2, Phase 0 and Phase 1 re-run green.
 **db/019** fixes `crm_assign_lead()` matching a rule against a missing field; the import's dedupe moved to indexed lookups (240 s → 20 s for 2,000 rows).

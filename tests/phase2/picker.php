@@ -55,5 +55,6 @@ page($jAdmin, '/pick/?source=anything');
 ok(last_activity_id() === $before, 'a search is not an action: nothing is written to the activity log');
 $log = '';
 foreach ([getenv('CRM_DEV_STATE') . '/app.log', getenv('CRM_DEV_STATE') . '/apache/apache.err'] as $f) { if (is_file($f)) { $log .= file_get_contents($f); } }
-ok(!preg_match('/PHP (Warning|Notice|Deprecated|Fatal)|Uncaught/i', $log), 'no PHP warning, notice or uncaught error in the server log');
+preg_match_all('/^.*(PHP (Warning|Notice|Deprecated|Fatal)|Uncaught).*$/mi', $log, $bad);
+ok($bad[0] === [], 'no PHP warning, notice or uncaught error in the server log' . ($bad[0] === [] ? '' : ': ' . implode(' / ', array_slice(array_unique($bad[0]), 0, 3))));
 finish();

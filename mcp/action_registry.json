@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-10T12:17:24+00:00",
+    "generated_at": "2026-10-10T21:40:34+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -304,8 +304,8 @@
                 "q",
                 "view"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "deal-list": {
             "screen": "deal-list",
@@ -313,7 +313,7 @@
             "section": "Pipelines, deals and THE BOARD — THE FIRST EXEMPLAR (slice 3)",
             "when": "the same deals as a sortable table grouped by stage or owner, columns from the saved view (params as the board plus `group`, `sort`)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "forecast": {
@@ -326,7 +326,7 @@
                 "months",
                 "team"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "deal-view": {
@@ -337,7 +337,7 @@
             "params": [
                 "tab"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "deal-add": {
@@ -353,7 +353,7 @@
                 "value",
                 "close"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "deal-edit": {
@@ -362,7 +362,7 @@
             "section": "Pipelines, deals and THE BOARD — THE FIRST EXEMPLAR (slice 3)",
             "when": "to change a deal's fields, products, contacts, the probability override, the restriction (managers)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "deal-won": {
@@ -371,7 +371,7 @@
             "section": "Pipelines, deals and THE BOARD — THE FIRST EXEMPLAR (slice 3)",
             "when": "the won form: confirm the value and the close date",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "deal-lost": {
@@ -380,7 +380,7 @@
             "section": "Pipelines, deals and THE BOARD — THE FIRST EXEMPLAR (slice 3)",
             "when": "the lost form: the reason and a note",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "saved-views": {
@@ -389,7 +389,7 @@
             "section": "Pipelines, deals and THE BOARD — THE FIRST EXEMPLAR (slice 3)",
             "when": "my saved views and the shared ones: name, kind, filters as chips, layout; Run · Edit · Delete",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "calendar": {
@@ -2945,7 +2945,7 @@
             "who": "deals.write",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_update": {
             "action": "deal_update",
@@ -3062,7 +3062,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "deal_move": {
@@ -3096,7 +3096,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_won": {
             "action": "deal_won",
@@ -3129,7 +3129,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_lost": {
             "action": "deal_lost",
@@ -3162,7 +3162,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_reopen": {
             "action": "deal_reopen",
@@ -3183,7 +3183,7 @@
             "who": "deals.any",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_assign": {
             "action": "deal_assign",
@@ -3210,7 +3210,7 @@
             "who": "deals.any or own",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_product_add": {
             "action": "deal_product_add",
@@ -3279,7 +3279,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the line",
-            "built": false
+            "built": true
         },
         "deal_product_update": {
             "action": "deal_product_update",
@@ -3360,7 +3360,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the line",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "deal_product_remove": {
@@ -3382,7 +3382,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the line",
-            "built": false
+            "built": true
         },
         "deal_contact_add": {
             "action": "deal_contact_add",
@@ -3421,7 +3421,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_contact_update": {
             "action": "deal_contact_update",
@@ -3460,7 +3460,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "deal_contact_remove": {
             "action": "deal_contact_remove",
@@ -3487,7 +3487,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the deal",
-            "built": false
+            "built": true
         },
         "saved_view_save": {
             "action": "saved_view_save",
@@ -3562,7 +3562,7 @@
             "who": "own or reports.team",
             "agent": true,
             "record_id": "the view",
-            "built": false
+            "built": true
         },
         "saved_view_delete": {
             "action": "saved_view_delete",
@@ -3583,7 +3583,7 @@
             "who": "own or reports.team",
             "agent": true,
             "record_id": "the view",
-            "built": false
+            "built": true
         },
         "activity_create": {
             "action": "activity_create",

@@ -1,0 +1,115 @@
+<?php
+/** Proof — a deal's life (deals-board.md): create with its defaults and prefilled from an account's page, the required fields, update and the override,
+ * Won (the account turns customer; a back-dated close) and Lost (a deal's reason), reopen (a manager's), reassign (a Rep's own only), the wall. */
+require __DIR__ . '/lib.php';
+$x = run_tag();
+as_member(27);
+echo "1. Making a deal\n";
+$acc = (int) post_as(26, '/accounts/save.php', ['name' => "Globex $x"])['json']['record_id'];
+$con = (int) post_as(26, '/contacts/save.php', ['first_name' => 'Hank', 'last_name' => "Scorpio $x", 'account' => $acc])['json']['record_id'];
+$since = last_activity_id();
+$r = post_as(26, '/deals/save.php', ['title' => "Globex $x platform"]);
+$d = (int) ($r['json']['record_id'] ?? 0);
+$row = q('SELECT * FROM deals WHERE id = :d', ['d' => $d])[0] ?? [];
+ok($r['code'] === 200 && $d > 0 && (int) $row['pipeline_id'] === 1 && (int) $row['stage_id'] === stage('Qualification') && (int) $row['owner_member_id'] === 26 && $row['currency'] === 'USD' && preg_match('/^D-\d+$/', $row['number']) === 1,
+    'deal_create with a title alone: the default pipeline, its first stage, the caller the owner, the business\'s currency, a number');
+$a = activity('deal.create', $since)[0] ?? null;
+ok($a !== null && json_decode($a['after'], true)['title'] === "Globex $x platform" && (int) $a['deal_id'] === $d, 'deal.create logged with the deal');
+$f = get_as(26, "/deals/new?account=$acc")['json']['data']['values'];
+ok($f['account_id'] === $acc && $f['title'] === "Globex $x — new business" && $f['owner_member_id'] === 26, 'New deal from the account\'s page arrives prefilled: the account and "<account> — new business"');
+$f = get_as(26, "/deals/new?contact=$con&value=4500&close=2026-12-15")['json']['data']['values'];
+ok($f['primary_contact_id'] === $con && $f['account_id'] === $acc && $f['value'] === '4500' && $f['expected_close_date'] === '2026-12-15', '…from the contact\'s: the contact, their account, the value and close date given');
+$h = html_as(26, "/accounts/$acc")['body'];
+ok(str_contains($h, 'id="account-new-deal-btn"') && str_contains($h, '/deals/new?account=' . $acc), 'the account page now offers New deal');
+$r = post_as(26, '/deals/save.php', ['title' => "Straight in $x", 'stage' => 'Proposal']);
+ok($r['code'] === 422 && message_of($r) === 'Proposal needs: primary contact, value, expected close date.' && isset($r['json']['error']['fields']['primary_contact'], $r['json']['error']['fields']['value']), 'made straight into Proposal without its fields: refused, the three named');
+$r = post_as(26, '/deals/save.php', ['title' => "Straight in $x", 'stage' => 'Proposal', 'primary_contact' => $con, 'value' => 9000, 'expected_close_date' => '2026-12-01', 'account' => $acc]);
+ok($r['code'] === 200 && (int) one('SELECT stage_id FROM deals WHERE id = :d', ['d' => $r['json']['record_id']]) === stage('Proposal'), '…with them: made in Proposal');
+$r = post_as(26, '/deals/save.php', ['title' => "Won? $x", 'stage' => 'Won']);
+ok($r['code'] === 422 && field_of($r) === 'stage' && str_contains(message_of($r), 'Won form'), 'Won is never a stage set here: the Won form');
+ok(post_as(26, '/deals/save.php', ['title' => '', 'value' => '5'])['code'] === 422 && post_as(26, '/deals/save.php', ['title' => 'x', 'value' => '-1'])['json']['error']['fields']['value'] !== null, 'a title is required; a value is 0 or more');
+ok(post_as(29, '/deals/save.php', ['title' => 'Viewer'])['code'] === 403, 'a Viewer makes no deal');
+
+echo "2. Changing it\n";
+$r = post_as(26, '/deals/save.php', ['deal' => $d, 'account' => $acc, 'primary_contact' => $con, 'value' => '20000', 'expected_close_date' => '2026-11-30']);
+$row = q('SELECT * FROM deals WHERE id = :d', ['d' => $d])[0];
+ok($r['code'] === 200 && (float) $row['value'] === 20000.0 && (int) $row['primary_contact_id'] === $con && (float) $row['weighted_value'] === 2000.0, 'deal_update: the value, the contact, the close; weighted = value × the stage\'s 10%');
+ok((int) one('SELECT count(*) FROM deal_contacts WHERE deal_id = :d AND contact_id = :c AND is_primary', ['d' => $d, 'c' => $con]) === 1, 'the primary contact is on the deal\'s people, primary');
+$r = post_as(26, '/deals/save.php', ['deal' => $d, 'probability_override' => 40]);
+ok((float) one('SELECT weighted_value FROM deals WHERE id = :d', ['d' => $d]) === 8000.0, 'the probability set by hand: 40% → $8,000 weighted');
+post_as(26, '/deals/save.php', ['deal' => $d, 'probability_override' => '']);
+ok((int) one('SELECT probability FROM deals WHERE id = :d', ['d' => $d]) === 10, 'blank: back to the stage\'s');
+$r = post_as(26, '/deals/save.php', ['deal' => $d, 'description' => 'Platform']);
+$a = activity('deal.update', $since);
+$last = json_decode(end($a)['after'], true);
+ok($r['code'] === 200 && (string) one('SELECT value FROM deals WHERE id = :d', ['d' => $d]) === '20000.00' && $last['description'] === '(changed)', 'a field left out stays; the description is logged as changed, never its words');
+ok(post_as(26, '/deals/save.php', ['deal' => $d])['json']['did'] === 'Nothing to change', 'nothing sent: nothing changed');
+$r = post_as(26, '/deals/save.php', ['deal' => $d, 'stage' => 'Discovery']);
+ok($r['code'] === 200 && (int) one('SELECT stage_id FROM deals WHERE id = :d', ['d' => $d]) === stage('Discovery'), 'the stage by its name on update');
+$r = post_as(26, '/deals/save.php', ['deal' => $d, 'pipeline' => 2]);
+ok($r['code'] === 200 && (int) one('SELECT stage_id FROM deals WHERE id = :d', ['d' => $d]) === stage('Upcoming', 2), 'another pipeline: its first stage');
+post_as(26, '/deals/save.php', ['deal' => $d, 'pipeline' => 1, 'stage' => 'Negotiation']);
+ok((int) one('SELECT stage_id FROM deals WHERE id = :d', ['d' => $d]) === stage('Negotiation'), 'and back, named stage');
+ok(post_as(30, '/deals/save.php', ['deal' => $d, 'title' => 'Mine now'])['code'] === 403, 'another Rep may not change it');
+ok(post_as(27, '/deals/save.php', ['deal' => $d, 'title' => "Globex $x platform"])['code'] === 200, 'a manager may');
+
+echo "3. Won and lost\n";
+$g = get_as(26, "/deals/$d/won")['json']['data'];
+ok($g['close_date'] === date('Y-m-d') && $g['value'] == 20000, 'the Won form: the value to confirm, today as the close date');
+ok(post_as(26, "/deals/$d/won", ['deal' => $d, 'close_date' => date('Y-m-d', strtotime('+3 days'))])['json']['error']['fields']['close_date'] === 'A won deal closed today or earlier.', 'a close date in the future is refused');
+$since = last_activity_id();
+$r = post_as(26, "/deals/$d/won", ['deal' => $d, 'value' => '21500', 'close_date' => date('Y-m-d', strtotime('-2 days'))]);
+$row = q('SELECT * FROM deals WHERE id = :d', ['d' => $d])[0];
+ok($r['code'] === 200 && $row['status'] === 'won' && (int) $row['stage_id'] === stage('Won') && (float) $row['value'] === 21500.0 && (int) $row['probability'] === 100, 'deal_won: the confirmed value, the Won stage, 100%');
+ok(substr((string) $row['won_at'], 0, 10) === date('Y-m-d', strtotime('-2 days')) && $row['expected_close_date'] === date('Y-m-d', strtotime('-2 days')), 'closed two days ago: won_at and the close date are that day');
+ok(one('SELECT kind FROM accounts WHERE id = :a', ['a' => $acc]) === 'customer' && one('SELECT lifecycle FROM contacts WHERE id = :c', ['c' => $con]) === 'customer', 'the account turns customer, the contact too');
+$a = activity('deal.won', $since)[0] ?? null;
+$p = json_decode((string) ($a['after'] ?? '{}'), true);
+ok($p['value'] == 21500 && $p['currency'] === 'USD' && $p['close_date'] === date('Y-m-d', strtotime('-2 days')), 'deal.won logged with {value, currency, close_date}');
+ok(post_as(26, "/deals/$d/won", ['deal' => $d])['code'] === 422, 'won twice is refused');
+$l = deal_make(26, ['title' => "Lose $x"]);
+ok(post_as(26, "/deals/$l/lost", ['deal' => $l])['json']['error']['fields']['reason'] ?? null, 'Lost needs a reason');
+ok(field_of(post_as(26, "/deals/$l/lost", ['deal' => $l, 'reason' => 8])) === 'reason', 'a lead\'s reason is not a deal\'s');
+$since = last_activity_id();
+$r = post_as(26, "/deals/$l/lost", ['deal' => $l, 'reason' => 4, 'note' => 'Went with Initech']);
+$row = q('SELECT * FROM deals WHERE id = :d', ['d' => $l])[0];
+ok($r['code'] === 200 && $row['status'] === 'lost' && (int) $row['lost_reason_id'] === 4 && $row['lost_note'] === 'Went with Initech' && (float) $row['weighted_value'] === 0.0, 'deal_lost: the Lost stage, the reason and the note, nothing weighted');
+ok((json_decode((string) (activity('deal.lost', $since)[0]['after'] ?? '{}'), true)['reason'] ?? '') === 'Went with competitor', 'deal.lost logged with the reason\'s words');
+$h = html_as(26, "/deals/$l")['body'];
+ok(str_contains($h, 'id="deal-lost-reason"') && str_contains($h, 'Went with competitor') && !str_contains($h, 'id="deal-won-btn"'), 'the page says why; no Won or Lost buttons on a closed deal');
+
+echo "4. Reopen\n";
+ok(post_as(26, '/deals/reopen.php', ['deal' => $l])['code'] === 403, 'a Rep may not reopen');
+$since = last_activity_id();
+$r = post_as(27, '/deals/reopen.php', ['deal' => $l]);
+$row = q('SELECT * FROM deals WHERE id = :d', ['d' => $l])[0];
+ok($r['code'] === 200 && $row['status'] === 'open' && (int) $row['stage_id'] === stage('Qualification') && $row['lost_reason_id'] === null && $row['lost_at'] === null, 'a manager reopens it into the stage it left; the reason and the stamp cleared');
+ok(activity('deal.reopen', $since) !== [], 'deal.reopen logged');
+ok(post_as(27, '/deals/reopen.php', ['deal' => $l])['code'] === 422, 'an open deal is not reopened');
+$cats = [];
+foreach (json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/maludb-os.json'), true)['approvals'] ?? [] as $ap) { $cats[$ap['action'] ?? ''] = $ap['category'] ?? null; }
+ok(($cats['deal_reopen'] ?? null) === 'other' && array_intersect(array_keys($cats), ['deal_won', 'deal_lost', 'deal_move', 'deal_assign', 'saved_view_delete']) === [], 'maludb-os.json pauses an agent\'s deal_reopen (category other) — and no other deal action');
+
+echo "5. Reassign\n";
+$mine = deal_make(26, ['title' => "Mine $x"]);
+$dana = deal_make(30, ['title' => "Dana's $x"]);
+$r = post_as(26, '/deals/assign.php', ['deal' => $dana, 'owner' => 26]);
+ok($r['code'] === 403 && str_contains(message_of($r), 'Only a manager reassigns'), 'a Rep cannot reassign another\'s deal');
+$since = last_activity_id();
+$r = post_as(26, '/deals/assign.php', ['deal' => $mine, 'owner' => 30]);
+ok($r['code'] === 200 && (int) one('SELECT owner_member_id FROM deals WHERE id = :d', ['d' => $mine]) === 30, '…but gives their own away');
+$a = activity('deal.assign', $since)[0] ?? null;
+ok($a !== null && json_decode($a['before'], true)['owner_member_id'] === 26 && json_decode($a['after'], true)['owner_member_id'] === 30, 'deal.assign logged before → after');
+$r = post_as(27, '/deals/assign.php', ['deals' => "$mine,$dana", 'owner' => 26]);
+ok($r['code'] === 200 && (int) one('SELECT count(*) FROM deals WHERE id IN (' . $mine . ',' . $dana . ') AND owner_member_id = 26') === 2 && $r['json']['did'] === 'Gave 2 deals to SMOKE Priya', 'a manager reassigns several at once');
+ok(post_as(26, '/deals/assign.php', ['deal' => $mine, 'owner' => ''])['json']['error']['fields']['owner'] === 'Only a manager leaves a deal unowned.', 'only a manager leaves one unowned');
+
+echo "6. The wall\n";
+setting('allow_restricted_records', 'true');
+$secret = deal_make(26, ['title' => "Secret $x"]);
+post_as(27, '/records/restrict.php', ['kind' => 'deal', 'record' => $secret, 'member' => 26]);
+ok(get_as(30, "/deals/$secret")['code'] === 404 && post_as(30, "/deals/$secret/move", ['deal' => $secret, 'to_stage' => 'Discovery'])['code'] === 404, 'a restricted deal is the same 404 to another Rep, on the page and on a move');
+$ids = array_map(static fn ($c) => $c['deal_id'], array_merge(...array_map(static fn ($s) => $s['deals'], get_as(30, '/pipeline/new_business/board?q=' . rawurlencode("Secret $x"))['json']['data']['stages'])));
+ok(!in_array($secret, $ids, true) && get_as(26, "/deals/$secret")['code'] === 200, '…not on their board; its owner sees it');
+ok(get_as(29, "/deals/$d")['code'] === 200 && post_as(29, "/deals/$d/won", ['deal' => $d])['code'] === 403, 'a Viewer reads a deal, changes nothing');
+finish();

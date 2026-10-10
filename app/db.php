@@ -71,3 +71,12 @@ function one_value(PDO $pdo, string $sql, array $args = []): mixed
     $v = $st->fetchColumn();
     return $v === false ? null : $v;
 }
+
+/** The first row, or null (slice 3). */
+function one_row(PDO $pdo, string $sql, array $args = []): ?array
+{
+    $st = $pdo->prepare($sql);
+    $st->execute($args);
+    $r = $st->fetch();
+    return $r === false ? null : $r;
+}

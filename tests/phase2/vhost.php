@@ -22,9 +22,14 @@ ok(page($j, '/search')['code'] === 200 && page($j, '/activity')['code'] === 200 
 ok(page($j, '/email/unmatched')['code'] === 200, '/email/unmatched reaches email/unmatched.php (the placeholder)');
 $pid = (int) one("SELECT id FROM pipelines WHERE key = 'new_business'");
 ok(page($j, '/pipeline/new_business/board')['code'] === 200 && page($j, "/pipeline/$pid/board")['code'] === 200, 'the board by the pipeline\'s key and by its id reach pipeline/board.php');
-ok(page($j, '/pipeline/new_business/list')['code'] === 404 && page($j, '/pipeline/new_business/forecast')['code'] === 404 && page($j, '/pipeline/new_business/columns')['code'] === 404, '…list, forecast and columns are rewritten to their files, which slice 3 builds: 404 until then');
+$s3 = is_file($root3 = dirname(__DIR__, 2) . '/html/pipeline/list.php');            // slice 3 builds them: 404 before, the screen after
+$want3 = $s3 ? 200 : 404;
+ok(page($j, '/pipeline/new_business/list')['code'] === $want3 && page($j, '/pipeline/new_business/forecast')['code'] === $want3 && page($j, '/pipeline/new_business/columns')['code'] === $want3, '…list, forecast and columns are rewritten to their files, which slice 3 builds: ' . $want3);
 ok(page($j, '/pipeline/../board')['code'] === 404 && page($j, '/pipeline/new_business/nonsense')['code'] === 404, 'a malformed pipeline path is 404');
-ok(page($j, '/deals/1')['code'] === 404 && page($j, '/deals/new')['code'] === 404 && page($j, '/deals/1/edit')['code'] === 404 && page($j, '/deals/1/won')['code'] === 404, '/deals/{id}, /deals/new, /deals/{id}/edit and /deals/{id}/won are rewritten to view.php, form.php and won.php: 404 until slice 3');
+$dealsBuilt = is_file(dirname(__DIR__, 2) . '/html/deals/view.php');
+ok($dealsBuilt ? page($j, '/deals/new')['code'] === 200 && page($j, '/deals/999999')['code'] === 404 && str_contains(page($j, '/deals/999999/won')['body'], 'Deal not found.')
+              : page($j, '/deals/1')['code'] === 404 && page($j, '/deals/new')['code'] === 404 && page($j, '/deals/1/edit')['code'] === 404 && page($j, '/deals/1/won')['code'] === 404,
+   '/deals/{id}, /deals/new, /deals/{id}/edit and /deals/{id}/won are rewritten to view.php, form.php and won.php' . ($dealsBuilt ? ' (built: a missing deal is "Deal not found.")' : ': 404 until slice 3'));
 ok(page($j, '/accounts/999999')['code'] === 404 && page($j, '/leads/1/convert')['code'] === 404 && page($j, '/import/1/status')['code'] === 404, 'a record that is not there and a page of a record whose slice has not shipped: 404');
 ok(page($j, '/email/in/1')['code'] === 404 && page($j, '/email/out/1')['code'] === 404 && page($j, '/email/sideways/1')['code'] === 404, '/email/{in|out}/{id} is rewritten to email/view.php: 404 until slice 5');
 ok(req('GET', '/u/' . str_repeat('a', 32))['code'] === 404 && req('GET', '/u/short')['code'] === 404, '/u/{token} is rewritten to u/index.php: 404 until slice 5; a malformed token 404');

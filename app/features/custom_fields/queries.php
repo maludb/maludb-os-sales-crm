@@ -7,11 +7,12 @@ declare(strict_types=1);
  * value it cannot convert as it came (so the database's sentence names the field), and leaves a key left out as it was.
  */
 
-/** The live definitions of a kind, in order. */
-function custom_field_defs(PDO $pdo, string $kind): array
+/** The live definitions of a kind, in order. A deal's field may be for some pipelines only (`pipeline_ids`; empty = all): $pipeline narrows to the pipeline's. */
+function custom_field_defs(PDO $pdo, string $kind, ?int $pipeline = null): array
 {
-    $st = $pdo->prepare('SELECT field_id, key, label, field_type, options, sort_order FROM mcp_custom_fields WHERE applies_to = :k AND archived_at IS NULL ORDER BY sort_order, label');
-    $st->execute(['k' => $kind]);
+    $st = $pdo->prepare('SELECT field_id, key, label, field_type, options, sort_order, required_to_win FROM mcp_custom_fields WHERE applies_to = :k AND archived_at IS NULL
+                           AND (CAST(:p AS bigint) IS NULL OR cardinality(pipeline_ids) = 0 OR CAST(:p AS bigint) = ANY (pipeline_ids)) ORDER BY sort_order, label');
+    $st->execute(['k' => $kind, 'p' => $pipeline]);
     return array_map(static fn (array $d): array => $d + ['options_list' => pg_text_array((string) $d['options'])], $st->fetchAll());
 }
 
@@ -20,10 +21,10 @@ function custom_field_defs(PDO $pdo, string $kind): array
  * value did not — an unticked checkbox, an empty multi-select — is set empty), or an agent's `custom_values` (a JSON object, or an array). Null when
  * the request names none (left as it was).
  */
-function custom_values_from_request(PDO $pdo, string $kind, array $current): ?array
+function custom_values_from_request(PDO $pdo, string $kind, array $current, ?int $pipeline = null): ?array
 {
     $defs = [];
-    foreach (custom_field_defs($pdo, $kind) as $d) {
+    foreach (custom_field_defs($pdo, $kind, $pipeline) as $d) {
         $defs[$d['key']] = $d;
     }
     $given = null;
@@ -72,10 +73,10 @@ function custom_values_from_request(PDO $pdo, string $kind, array $current): ?ar
 }
 
 /** The values as a person reads them: [label => text] for the set ones, in the definitions' order. */
-function custom_values_display(PDO $pdo, string $kind, array $values): array
+function custom_values_display(PDO $pdo, string $kind, array $values, ?int $pipeline = null): array
 {
     $out = [];
-    foreach (custom_field_defs($pdo, $kind) as $d) {
+    foreach (custom_field_defs($pdo, $kind, $pipeline) as $d) {
         if (!array_key_exists($d['key'], $values) || $values[$d['key']] === null) {
             continue;
         }

@@ -62,3 +62,47 @@ another's deal, a manager can; a saved view saves the filters and re-runs; JSON 
 
 ## Open questions
 None.
+
+## Built and proven (2026-10-10)
+The board of a pipeline (by id or key): a column per open stage with its colour, count, value and weighted (the business's currency; another currency counted
+apart), the rotting count and the WIP warning; Won and Lost as narrow drop targets with the month's count and value; cards with the title, the account, the
+short value, the owner's initials, the next step in the four colours, the hourglass, three tags (not at 375) and the flag naming what the next stage needs;
+the card's menu as a `<details>` (Move to… — the no-JS move — Won, Lost, Log call and Schedule once slice 4 ships, Open); the drag (SortableJS, loaded in
+the layout) posting `deal_move` and swapping in the columns the server renders; the region polled every 30 s (never mid-drag) and on dealChanged; at 375 one
+column wide with snap and a stage chooser. The list (grouped by stage or owner, sortable, its columns the saved view's), the forecast (sellers or stages by
+month, value · weighted, won, the quota line, totals; a cell opens the list of exactly those deals). The deal's page (number, status, account; value, weighted,
+close, owner; Won · Lost or Reopen; ⋯ Edit · Reassign · Restrict · Delete; the stage bar; Overview — fields, products, people with roles, the next step, the
+owner — Activities, Emails, Notes & files, History with the strip of time in each stage). The deal form (prefilled from an account's or a contact's page),
+the Won and Lost forms, the saved views page. The registry reads 9 screens and 15 actions built, `deal_reopen` paused for agents.
+
+**Proven** by `tests/phase3/slice3/run.sh` on a fresh `crm_dev3`: **191 checks** and the log and the registry, under php -S and a real Apache — board 33 (the
+columns and crm_pipeline_summary()'s numbers; the four colours; rotting; WIP; the flag; a move logged with its five keys; position 0; the menu's select
+over HTMX answering the columns; a refused move naming the fields with the card kept; another pipeline's stage; another Rep's deal; the poll after another
+seller's move; Lost without a reason; five filters; the list sorted and grouped; the forecast's cell against the deals, the quota seen by the manager and not
+by another Rep, a cell opening its deals; a pipeline by key or id), deals 46 (the defaults; prefilled from the account and from the contact; New deal on the
+account page; made straight into Proposal refused then admitted; Won never set by a form; update, the override and back; a field left out stays; the stage
+by name; another pipeline's first stage; the Won form, a future close refused, a back-dated win; the account and contact turn customer; Lost needs a deal's
+reason; reopen a manager's into the stage it left; reassign — a Rep's own only, a manager's several, unowned a manager's; the wall), products 25, views 15,
+json 34, the browser 38 (a real drag; a refused drag snapping back with the flash; a drop on Won opening the form and the post winning it; the stage bar; a
+line; New deal from an account; Save this view; the poll; the menu's move and the Lost form with JavaScript off; the nine screens at 375 and 1280).
+Slices 1 and 2, Phase 2, Phase 0 and Phase 1 re-run green; slice 2's conversion now lands on the new deal and its proof follows that; Phase 2's routing
+and browser proofs now follow whether the board, the deal pages and the calendar are built (404 or a placeholder before, the screen after). Phase 2's
+picker proof caught the deal form passing the contact picker's `include` as a list — the kit takes a comma-separated string (fixed); its log check now
+prints the offending line.
+
+**Decisions taken here (within the spec):**
+- The drag's answer is the columns region re-rendered with the board's filters, which the move carries as `board_query` (parsed by
+  `board_filters_from_request(…, $src)`); a 422 retargets to the flash and the script asks the region to re-render, so the card snaps back.
+- The board is proven dragging at 1920 wide: at 1280 the Won and Lost columns are past the scroll edge. Dragging into an off-screen column relies on the
+  browser scrolling during the drag; the menu's Move to… and the Won/Lost links are always there.
+- The heads count what the filters leave, computed from the same rows as the cards; unfiltered they equal crm_pipeline_summary() (proven).
+- A deal's custom fields follow its pipeline (`custom_field_defs.type_ids`, shown as `pipeline_ids`); a field marked required to win refuses the Won form by name.
+- A won deal closed on an earlier day keeps that day as `won_at` (noon), so the forecast and the leaderboard count it in its month.
+- `deal_product_update` and `deal_contact_update` share their add handlers (`products/save.php`, `contacts/save.php` include `add.php`).
+- `/deals` in a browser goes to the default board; in JSON it is the `find_deals` resolver.
+- A forecast row for a seller with no deal in the window and no quota is left out (agents, people who do not sell).
+- Products from Inventory or the ledger: the picker source is registered and reads `k7_read()`; no connection is approved yet, so the form shows the name
+  field only, and a line can carry `provider_app` + `provider_id` from an agent.
+- The kit gained `one_row()` (app/db.php); `record_emails()` reads a deal's emails by `deal_id`.
+
+**Seen, for the owner:** the seeded stages have no rotting days and the settings none, so nothing rots until someone sets them (slice 9's admin).

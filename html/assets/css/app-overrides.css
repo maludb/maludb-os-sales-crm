@@ -128,3 +128,44 @@ html.app-skin-dark #record-picker .record-picker-search { background: #0f172a; }
 .lead-score > span { width: 30px; height: 30px; border-radius: 50%; background: var(--bs-body-bg, #fff); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
 .lead-score.lead-score-none { background: none; border: 2px dashed rgba(108, 117, 125, .4); }
 html.app-skin-dark .lead-score > span { background: #1b2431; }
+
+/* The board (pipeline-board.md §1, slice 3): columns side by side, scrolling sideways with a visible bar; one column wide at 375 with snap; Won and Lost
+   narrow drop targets; the card compact; the stage bar a row of chevrons. */
+.board-columns { display: flex; gap: .75rem; overflow-x: auto; padding-bottom: .5rem; align-items: flex-start; scrollbar-width: thin; }
+.board-col { flex: 0 0 272px; max-width: 272px; background: var(--bs-tertiary-bg, #f3f4f6); border-radius: .5rem; display: flex; flex-direction: column; max-height: calc(100vh - 260px); }
+.board-col-head { padding: .5rem .6rem; border-top: 3px solid var(--stage, #6c757d); border-radius: .5rem .5rem 0 0; background: var(--bs-body-bg, #fff); }
+.board-col-body { padding: .5rem; overflow-y: auto; min-height: 5rem; flex: 1 1 auto; }
+.board-col-foot { padding: .35rem .6rem; border-top: 1px solid var(--bs-border-color, #e5e7eb); }
+.board-col-closed { flex: 0 0 168px; max-width: 168px; }
+.board-col-closed .board-col-body { border: 2px dashed var(--bs-border-color, #d1d5db); margin: .5rem; border-radius: .5rem; min-height: 6rem; }
+.board-col-won .board-col-body.sortable-over, .board-col-won .board-col-body:has(.board-card) { border-color: var(--bs-success); }
+.board-col-lost .board-col-body:has(.board-card) { border-color: var(--bs-danger); }
+.board-card { cursor: grab; border: 1px solid var(--bs-border-color, #e5e7eb); box-shadow: none; }
+.board-card:active { cursor: grabbing; }
+.board-card-ghost { opacity: .45; }
+.board-avatar { width: 1.6rem; height: 1.6rem; font-size: 10px; font-weight: 700; }
+.board-card-menu { position: relative; }
+.board-card-menu > summary { list-style: none; }
+.board-card-menu > summary::-webkit-details-marker { display: none; }
+.board-card-menu-body { position: absolute; right: 0; top: 1.8rem; z-index: 20; width: 14rem; }
+@media (max-width: 767.98px) {
+  .board-columns { scroll-snap-type: x mandatory; }
+  .board-col { flex: 0 0 calc(100vw - 3rem); max-width: calc(100vw - 3rem); scroll-snap-align: start; max-height: none; }
+  .board-col-closed { flex: 0 0 calc(100vw - 3rem); max-width: calc(100vw - 3rem); }
+  .board-card-tag { display: none; }
+}
+.deal-stage-bar { display: flex; flex-wrap: wrap; gap: 2px; }
+.deal-stage { flex: 1 1 0; min-width: 6.5rem; margin: 0; }
+.deal-stage-btn { width: 100%; display: flex; align-items: center; justify-content: center; border: 0; padding: .45rem .5rem; font-size: 12px; font-weight: 600; min-height: 44px;
+  background: var(--bs-tertiary-bg, #eef0f3); color: var(--bs-secondary-color, #6b7280); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 10px 50%); }
+.deal-stage-past .deal-stage-btn { background: color-mix(in srgb, var(--stage) 25%, transparent); color: var(--bs-body-color); }
+.deal-stage-current .deal-stage-btn { background: var(--stage); color: #fff; }
+.deal-stage-btn:not(:disabled):hover { filter: brightness(.95); cursor: pointer; }
+a.deal-stage { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; min-height: 44px; border-radius: .25rem; flex: 0 0 auto; padding: 0 .9rem; }
+.deal-stage-won-link { background: rgba(25, 135, 84, .12); color: #146c43; }
+.deal-stage-lost-link { background: rgba(220, 53, 69, .1); color: #b02a37; }
+.deal-stage-closed.deal-stage-won .deal-stage-btn { background: var(--bs-success); color: #fff; }
+.deal-stage-closed.deal-stage-lost .deal-stage-btn { background: var(--bs-danger); color: #fff; }
+.history-step { padding: .25rem .5rem; border-radius: .35rem; background: var(--bs-tertiary-bg, #f3f4f6); max-width: 10rem; }
+.history-step-current { background: rgba(13, 110, 253, .12); }
+.forecast-grid td, .forecast-grid th { vertical-align: top; }

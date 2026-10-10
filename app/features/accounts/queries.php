@@ -150,9 +150,11 @@ function record_activities(PDO $pdo, string $kind, int $id, int $done = 20): arr
 /** The emails of an account (to and from any of its contacts, or on its deals) or of a contact: subject, direction, date — never the body here. */
 function record_emails(PDO $pdo, string $kind, int $id, int $limit = 50): array
 {
-    $cond = $kind === 'account'
-        ? '(e.deal_id IN (SELECT deal_id FROM mcp_deals WHERE account_id = :id) OR e.matched_contact_ids && ARRAY(SELECT contact_id FROM mcp_contacts WHERE account_id = :id)::bigint[])'
-        : ':id = ANY (e.matched_contact_ids)';
+    $cond = match ($kind) {
+        'account' => '(e.deal_id IN (SELECT deal_id FROM mcp_deals WHERE account_id = :id) OR e.matched_contact_ids && ARRAY(SELECT contact_id FROM mcp_contacts WHERE account_id = :id)::bigint[])',
+        'deal' => 'e.deal_id = :id',
+        default => ':id = ANY (e.matched_contact_ids)',
+    };
     $st = $pdo->prepare("SELECT e.direction, e.email_id, e.at, e.from_name, e.from_address, e.subject, e.deal_id, e.is_private, e.status FROM mcp_emails e
                           WHERE e.match_status = 'matched' AND $cond ORDER BY e.at DESC LIMIT :l");
     $st->bindValue('id', $id, PDO::PARAM_INT);

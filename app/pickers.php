@@ -13,13 +13,16 @@ declare(strict_types=1);
  * Slice 1: account (a contact's company, a parent account — `except` leaves the account being edited out), contact (`account` narrows to its
  * people), owner (people and agents holding a role here), tag. Slice 2: lead (open, not proposed), source, campaign (slice 6 builds its screens;
  * the picker reads mcp_campaigns), list (static lists of a `record_kind` — the import's target), import_template (of a `kind`, the caller's or shared).
- * Later: deal, stage, pipeline, product (3); activity (4); template (5).
+ * Slice 3: deal (`account` narrows to its deals), pipeline, stage (`pipeline` required — none named, none offered; Won and Lost are their forms'), product
+ * (a sibling's catalog over K7 when a super-admin connected one — ids "inventory:<id>" / "gl:<id>"; none connected, no rows: the line is written by name).
+ * Later: activity (4); template (5).
  * A short enumeration (a kind, a role, a lifecycle, a size band) stays a <select>.
  */
 require_once __DIR__ . '/features/accounts/queries.php';
 require_once __DIR__ . '/features/contacts/queries.php';
 require_once __DIR__ . '/features/tags/queries.php';
 require_once __DIR__ . '/features/leads/queries.php';
+require_once __DIR__ . '/features/deals/queries.php';
 
 /** A small picker over one view: rows {id, label, detail?} by a name ILIKE, paged — for the short vocabularies (sources, campaigns, lists, templates). */
 function crm_simple_pick(PDO $pdo, string $sql, string $q, int $page, callable $row, array $args = []): array
@@ -96,5 +99,25 @@ return [
                 static fn (array $r): array => ['id' => (int) $r['id'], 'label' => $r['name'], 'detail' => str_replace('_csv', '', $r['kind']), 'badge' => $r['is_shared'] ? 'shared' : null], ['k' => $kind]);
         },
         'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, 'SELECT name FROM import_templates WHERE id = :id AND (is_shared OR owner_member_id = app_current_member_id())', ['id' => $id])) === null || $v === false) ? null : (string) $v,
+    ],
+    'deal' => [
+        'title' => 'Deals', 'noun' => 'deal', 'roles' => ['records.read'], 'params' => ['account'],
+        'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => deals_for_pick($pdo, $q, $p, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => deal_label($pdo, $id),
+    ],
+    'pipeline' => [
+        'title' => 'Pipelines', 'noun' => 'pipeline', 'roles' => ['records.read'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => pipelines_for_pick($pdo, $q, $p, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, 'SELECT name FROM mcp_pipelines WHERE pipeline_id = :id', ['id' => $id])) === null || $v === false) ? null : (string) $v,
+    ],
+    'stage' => [
+        'title' => 'Stages', 'noun' => 'stage', 'roles' => ['records.read'], 'params' => ['pipeline'],
+        'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => stages_for_pick($pdo, $q, $p, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, 'SELECT name FROM mcp_stages WHERE stage_id = :id', ['id' => $id])) === null || $v === false) ? null : (string) $v,
+    ],
+    'product' => [
+        'title' => 'Products', 'noun' => 'product', 'roles' => ['deals.write'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => products_for_pick($pdo, $q, $p, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => null,
     ],
 ];

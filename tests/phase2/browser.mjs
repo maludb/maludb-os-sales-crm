@@ -88,16 +88,27 @@ const smallControls = (page, scope) => page.evaluate((s) => [...document.querySe
   await toggleMenu(page);
   await page.waitForTimeout(400);
   ok(!(await shown(page, '#left-sidenav')), 'the menu button closes it again');
+  const stubbed = (f) => fs.readFileSync(new URL('../../html' + f, import.meta.url), 'utf8').includes('render_nav_stub(');   // a screen its slice has built is no placeholder any more
   await page.click('#tab-calendar');
-  await page.waitForURL(BASE + '/calendar');
-  await page.waitForSelector('#calendar-coming');
-  ok((await page.title()).startsWith('Calendar') && (await page.locator('#calendar-coming').innerText()).includes('slice 4'), 'the Calendar tab opens its placeholder (slice 4), title "' + (await page.title()) + '"');
-  ok(await page.evaluate(() => document.querySelector('#tab-calendar').classList.contains('active') && !document.querySelector('#tab-home').classList.contains('active') && document.getElementById('page-content').dataset.screen === 'calendar'), 'the tab is highlighted and the screen stamped calendar for the command bar');
-  ok((await overflow(page)).sw === 375, 'no sideways scroll on the placeholder');
+  await page.waitForURL(new RegExp('^' + BASE + '/calendar'));
+  if (stubbed('/calendar/index.php')) {
+    await page.waitForSelector('#calendar-coming');
+    ok((await page.title()).startsWith('Calendar') && (await page.locator('#calendar-coming').innerText()).includes('slice 4'), 'the Calendar tab opens its placeholder (slice 4), title "' + (await page.title()) + '"');
+  } else {
+    await page.waitForSelector('#page-content[data-screen^="calendar"]');
+    ok((await page.title()).startsWith('Calendar'), 'the Calendar tab opens the calendar (slice 4 built), title "' + (await page.title()) + '"');
+  }
+  ok(await page.evaluate(() => document.querySelector('#tab-calendar').classList.contains('active') && !document.querySelector('#tab-home').classList.contains('active') && document.getElementById('page-content').dataset.screen.startsWith('calendar')), 'the tab is highlighted and the screen stamped calendar for the command bar');
+  ok((await overflow(page)).sw === 375, 'no sideways scroll on the calendar tab\'s screen');
   await page.click('#tab-pipeline');
   await page.waitForURL(BASE + BOARD);
-  await page.waitForSelector('#pipeline-coming');
-  ok((await page.locator('#pipeline-coming').innerText()).includes('slice 3'), 'the Pipeline tab opens the default pipeline\'s board placeholder (slice 3) at ' + BOARD);
+  if (stubbed('/pipeline/board.php')) {
+    await page.waitForSelector('#pipeline-coming');
+    ok((await page.locator('#pipeline-coming').innerText()).includes('slice 3'), 'the Pipeline tab opens the default pipeline\'s board placeholder (slice 3) at ' + BOARD);
+  } else {
+    await page.waitForSelector('#board-columns');
+    ok(await page.evaluate(() => document.getElementById('page-content').dataset.screen === 'board' && document.querySelector('#tab-pipeline').classList.contains('active')), 'the Pipeline tab opens the default pipeline\'s board (slice 3 built) at ' + BOARD + ', the tab highlighted');
+  }
   await page.goto(BASE + '/settings/', { waitUntil: 'networkidle' });
   ok((await overflow(page)).sw === 375, 'no sideways scroll on My settings');
   const smallS = await smallControls(page, '#page-content');
