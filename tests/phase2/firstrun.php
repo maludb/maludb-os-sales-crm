@@ -12,7 +12,9 @@ foreach ([30 => 'a Rep (Dana)', 27 => 'the Sales Manager (Marco)', 1 => 'the adm
     $h = page($j, '/')['body'];
     ok(str_contains($h, 'id="home-first-run"') && substr_count($h, 'id="home-first-run-btn"') === 1 && str_contains($h, 'Add your first lead') && str_contains($h, 'href="/leads/new"'), "$who sees one button, Add your first lead, pointing at /leads/new");
     ok(!str_contains($h, 'id="home-today"') && !str_contains($h, 'id="home-closing"') && !str_contains($h, 'id="home-forecast"'), "$who sees nothing else on the home — no Today, no closing tile, no forecast");
-    ok(!str_contains($h, 'hx-get="/leads/new"'), "$who: the button is a plain link while slice 2's form is not built (no HTMX swap into a 404)");
+    $formBuilt = is_file(dirname(__DIR__, 2) . '/html/leads/form.php');
+    ok($formBuilt ? str_contains($h, 'hx-get="/leads/new"') : !str_contains($h, 'hx-get="/leads/new"'),
+        "$who: the button swaps by HTMX once slice 2's form is built, and is a plain link before (never an HTMX swap into a 404)");
     $d = json_decode(page($j, '/', $json)['body'], true)['data'] ?? [];
     ok(($d['first_run'] ?? null) === true && ($d['may']['lead'] ?? null) === true && ($d['today'] ?? null) === [], "$who's home JSON: first_run true, may.lead true, nothing today");
 }

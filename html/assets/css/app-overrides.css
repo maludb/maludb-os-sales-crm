@@ -71,7 +71,7 @@ html.app-skin-dark .app-tabbar { background: #1b2431; border-top-color: rgba(255
 .header-search .form-control { min-height: 38px; }
 .btn-touch, .form-select.btn-touch, .form-control.btn-touch { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 .form-select.btn-touch, .form-control.btn-touch { display: block; }
-label.btn-touch { display: flex; }
+label.btn-touch { display: flex; justify-content: flex-start; text-align: left; }
 .min-w-0 { min-width: 0; }
 .empty-state { display: flex; align-items: center; gap: 1rem; }
 .empty-state.text-center { flex-direction: column; }        /* a centred empty state (the first-run home) stacks: at 375 px a row pushed its button past the edge */
@@ -121,3 +121,10 @@ html.app-skin-dark #record-picker .record-picker-search { background: #0f172a; }
    toggle steps aside below 576 px (the layout's d-none d-sm-flex) and the badge truncates rather than push the avatar off the edge. */
 #header-role-badge { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 575.98px) { .header-right .nxl-h-item .nxl-head-link { padding-left: 8px; padding-right: 8px; } }
+
+/* Slice 2 (2026-10-09): a lead's score as a ring (0–100, conic), its number in words inside; unscored is a dashed ring. */
+.lead-score { --score: 0; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    background: conic-gradient(var(--bs-primary, #3454d1) calc(var(--score) * 1%), rgba(108, 117, 125, .18) 0); }
+.lead-score > span { width: 30px; height: 30px; border-radius: 50%; background: var(--bs-body-bg, #fff); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.lead-score.lead-score-none { background: none; border: 2px dashed rgba(108, 117, 125, .4); }
+html.app-skin-dark .lead-score > span { background: #1b2431; }

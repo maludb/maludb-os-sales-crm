@@ -243,7 +243,8 @@ $groups = nav_groups();
             if (!e.detail || !e.detail.target || e.detail.target.id !== 'page-content') return;
             var screen = pc.dataset.screen || '';
             var navId = { 'settings': 'my-settings', 'settings-tokens': 'tokens', 'board': 'pipeline', 'deal-list': 'pipeline', 'forecast': 'pipeline', 'deal-view': 'pipeline',
-                          'account-list': 'accounts', 'account-view': 'accounts', 'contact-list': 'contacts', 'contact-view': 'contacts', 'lead-list': 'leads', 'lead-inbox': 'leads', 'lead-view': 'leads',
+                          'account-list': 'accounts', 'account-view': 'accounts', 'account-add': 'accounts', 'account-edit': 'accounts', 'contact-list': 'contacts', 'contact-view': 'contacts', 'contact-add': 'contacts', 'contact-edit': 'contacts',
+                          'lead-list': 'leads', 'lead-inbox': 'leads', 'lead-view': 'leads', 'lead-add': 'leads', 'lead-edit': 'leads', 'lead-convert': 'leads', 'import-list': 'leads', 'import-new': 'leads', 'import-view': 'leads', 'duplicates': 'leads', 'merge': 'leads',
                           'activity-list': 'activities', 'activity-view': 'activities', 'email-unmatched': 'email', 'campaign-list': 'campaigns', 'list-list': 'lists' }[screen] || screen;
             document.querySelectorAll('.nxl-navbar .nxl-link, #app-tabbar .app-tab').forEach(function (a) { a.classList.remove('active'); });
             var link = document.querySelector('#nav-' + navId + ' .nxl-link');

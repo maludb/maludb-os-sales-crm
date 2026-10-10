@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-09T21:33:43+00:00",
+    "generated_at": "2026-10-10T12:17:24+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -177,8 +177,8 @@
                 "tag",
                 "view"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "lead-inbox": {
             "screen": "lead-inbox",
@@ -186,7 +186,7 @@
             "section": "Leads, conversion, the inbox, import and duplicates (slice 2)",
             "when": "unowned and proposed leads — from the website form and the mailbox — to assign, accept or dismiss, in bulk",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "lead-view": {
@@ -195,7 +195,7 @@
             "section": "Leads, conversion, the inbox, import and duplicates (slice 2)",
             "when": "one lead: fields, the duplicate warning, the score and its reasons, the timeline; Convert · Unqualify · Assign · Log call · Schedule",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "lead-add": {
@@ -210,7 +210,7 @@
                 "email",
                 "source"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "lead-edit": {
@@ -219,7 +219,7 @@
             "section": "Leads, conversion, the inbox, import and duplicates (slice 2)",
             "when": "to change a lead's fields (read-only once converted)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "lead-convert": {
@@ -228,7 +228,7 @@
             "section": "Leads, conversion, the inbox, import and duplicates (slice 2)",
             "when": "the conversion form: the account found by domain or name (or new), the contact found by email (or new), a deal yes or no with its pipeline, title, value and close date",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "import-list": {
@@ -237,7 +237,7 @@
             "section": "Leads, conversion, the inbox, import and duplicates (slice 2)",
             "when": "my imports (every import for a manager): kind, file, status, counts, rollback until",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "import-new": {
@@ -249,7 +249,7 @@
                 "kind",
                 "template"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "import-view": {
@@ -258,7 +258,7 @@
             "section": "Leads, conversion, the inbox, import and duplicates (slice 2)",
             "when": "one import: the counts, every row's result, Run (after a dry run) · Roll back (within 24 hours)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "duplicates": {
@@ -269,7 +269,7 @@
             "params": [
                 "kind"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "merge": {
@@ -282,7 +282,7 @@
                 "a",
                 "b"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "board": {
@@ -2275,7 +2275,7 @@
             "who": "leads.write",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "lead_update": {
             "action": "lead_update",
@@ -2398,7 +2398,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the lead",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "lead_qualify": {
@@ -2432,7 +2432,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "lead_unqualify": {
             "action": "lead_unqualify",
@@ -2465,7 +2465,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "lead_requalify": {
             "action": "lead_requalify",
@@ -2486,7 +2486,7 @@
             "who": "edit",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "lead_convert": {
             "action": "lead_convert",
@@ -2549,7 +2549,7 @@
             "who": "leads.convert and edit",
             "agent": true,
             "record_id": "the deal (or the contact or the account)",
-            "built": false
+            "built": true
         },
         "lead_assign": {
             "action": "lead_assign",
@@ -2576,7 +2576,7 @@
             "who": "leads.assign or edit",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "lead_accept_proposed": {
             "action": "lead_accept_proposed",
@@ -2603,7 +2603,7 @@
             "who": "leads.write",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "lead_dismiss_proposed": {
             "action": "lead_dismiss_proposed",
@@ -2624,7 +2624,7 @@
             "who": "leads.write",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "import_start": {
             "action": "import_start",
@@ -2693,7 +2693,7 @@
             "who": "imports.own",
             "agent": false,
             "record_id": "the import",
-            "built": false
+            "built": true
         },
         "import_run": {
             "action": "import_run",
@@ -2714,7 +2714,7 @@
             "who": "own or imports.shared",
             "agent": false,
             "record_id": "the import",
-            "built": false
+            "built": true
         },
         "import_rollback": {
             "action": "import_rollback",
@@ -2735,7 +2735,7 @@
             "who": "own or imports.shared",
             "agent": false,
             "record_id": "the import",
-            "built": false
+            "built": true
         },
         "import_template_save": {
             "action": "import_template_save",
@@ -2780,7 +2780,7 @@
             "who": "imports.own",
             "agent": false,
             "record_id": "the template",
-            "built": false
+            "built": true
         },
         "records_merge": {
             "action": "records_merge",
@@ -2813,7 +2813,7 @@
             "who": "records.merge",
             "agent": true,
             "record_id": "the survivor",
-            "built": false
+            "built": true
         },
         "duplicate_dismiss": {
             "action": "duplicate_dismiss",
@@ -2846,7 +2846,7 @@
             "who": "records.merge or edit",
             "agent": true,
             "record_id": "the pair",
-            "built": false
+            "built": true
         },
         "deal_create": {
             "action": "deal_create",

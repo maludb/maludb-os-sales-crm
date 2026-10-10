@@ -72,3 +72,51 @@ The build spec's §8 list, plus JSON mode on every screen and handler, 375 and 1
 
 ## Open questions
 None.
+
+## Built and proven (2026-10-10)
+Leads as cards (status, the score as a ring, the source, the owner, the next step) with their filters and the links to the inbox, imports and duplicates;
+the inbox (Proposed — Accept · Dismiss; Unowned — Take, or select several and assign with the owner picker); a lead's page (the duplicate warning, the
+three records as cards once converted, the fields and the message, qualify with a score, unqualify with a reason, requalify, assign, notes, files, the
+agenda, the history); the lead form; the conversion form saying Found or New for the account and the contact before it does anything, then the deal; the
+CSV import (the kind, the file, the columns, what to do with a match, the owner, the source, a list → the dry run → Run it for real → Roll back within 24
+hours), run by the worker's `imports` pass; the duplicates page by kind with the matching field marked; the two-column merge; Not a duplicate. The
+registry reads the 11 screens and 15 actions built, the 3 deletions (`lead_dismiss_proposed`, `import_rollback`, `records_merge`) paused for agents.
+
+**Proven** by `tests/phase3/slice2/run.sh` on a fresh `crm_dev2`: **202 checks** and the log and the registry, under php -S and a real Apache — leads 41
+(the form's lead and a seller's; the rules three ways — a member, a department's manager, round-robin in turn — and none matching leaving it unowned; a
+note moving new → working; qualify; unqualify needing a lead's reason, requalify; the inbox's accept, take, assign several, dismiss; the read-only
+converted lead), convert 22 (four fixtures — found by domain and by address, found by name with a new contact, all new, free mail with no company — and
+the POST making exactly what the form said; the deal's title, value, close, stage; `lead.convert`'s payload), import 41 (2,000 rows with 30 duplicates:
+the dry run's counts with nothing written, the run, the 24-hour window, the rollback's 1,970 tombstones; a template's mapping and policy; update filling
+only empty fields; owner_email, tags and a list; three refusals in words that never sink the batch; Latin-1 with semicolons; the ceiling; the rights),
+duplicates 24 (pairs only when both are visible, the highlight, the older kept by default, the merge moving notes, tags and the deal's contact, the
+tombstone, leads merging, Not a duplicate for everyone, the pauses), json 33, the browser 41 (a lead added, scored and converted through the forms; the
+import mapped in the browser, polled to done and run; the inbox's Accept; a merge choosing the newer; the eleven screens at 375 and 1280; JavaScript off).
+Slice 1 and Phase 2 re-run green; Phase 0 and Phase 1 green.
+
+**Found and fixed:**
+- **db/019 — `crm_assign_lead()` matched a rule against a lead that lacks the field**: `(m -> 'country') @> to_jsonb(NULL)` is NULL and `CONTINUE WHEN NULL`
+  does not skip, so a "Germany to Dana" rule took every lead without a country (likewise source, campaign, utm_source). A condition on a missing field is
+  now not met.
+- **The import's dedupe went through `mcp_leads`**, which computes every lead's label, tags and colour and cannot use the email index: a 2,000-row import
+  took about 240 s a run. The runner now looks up the base tables by their indexes with `crm_wall()` checked on the candidate row (the view's own rule):
+  **about 20 s a run** (10 ms a row; 50,000 rows ≈ 8 minutes in the worker).
+- A view's data key named `template` collided with `view()`'s own `$template` (EXTR_SKIP keeps the function's): **never pass `template`, `data`, `path` or
+  `viewsRoot` to `view()`**.
+
+**Decisions taken here (within the spec):**
+- The mapping step happens in the browser (JavaScript reads only the header row and draws a select per column, prefilled by the same words the server uses
+  and by the template); without JavaScript, and for an agent, `import_start` maps each header by its own words or the template's. The manifest's
+  parameters are unchanged.
+- The dry run is the whole file in ONE rolled-back transaction (a later row matches an earlier one, as the run will); the real run commits batches of 500
+  with their `import_rows`, so an interrupted run resumes after the last committed row. The worker logs `import.dry_run`, `import.done`, `import.failed`.
+- A contacts import never makes an account: an unknown `account_name` leaves the contact without one and says so, so a rollback leaves nothing behind.
+- `lead_accept_proposed` gives the owner named, else the rules', else unowned; `lead_assign` without `leads.assign` lets a seller take a lead for themselves only.
+- When `crm_lead_convert()` would find a record restricted from the caller, the form says "Found: an account restricted from you" — never "New".
+- `/leads/{id}/convert` and `/duplicates/merge` are the screen on GET and the action on POST; the merge derives the loser from the pair, so it works without JavaScript.
+- The `list` and `import_template` picker sources read their text filter (`record_kind`, `kind`) from the query; the endpoint forwards only integer params.
+- The worker's `search_catch_up` pass is real (it was slice 1's and was missed there).
+- The leads list links the inbox, imports and duplicates; a touch-sized label aligns left.
+
+**Seen, for the owner:** a lead a seller adds with no owner and no rule matching is unowned (the spec: the rules decide when the owner is omitted). The form
+says so ("The assignment rules decide"), but a seller may expect their own lead to be theirs — a one-line change if the owner wants the caller as the default.

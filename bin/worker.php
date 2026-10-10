@@ -13,8 +13,8 @@ declare(strict_types=1);
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
  * PHASE 0: every pass is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10):
- * `reminders`, `recurring_tasks`, `next_step_flags` slice 4's; `mail_poll`, `mail_match` slice 5's; `smart_lists`, `imports`, `exports`
- * slice 6's; `search_catch_up` slice 1's; `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`, `key_usage_prune` slice 9's.
+ * `reminders`, `recurring_tasks`, `next_step_flags` slice 4's; `mail_poll`, `mail_match` slice 5's; `smart_lists`, `exports` slice 6's;
+ * `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`, `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`.
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
 require_once dirname(__DIR__) . '/app/bootstrap.php';
@@ -88,10 +88,45 @@ function worker_pass_mail_poll(PDO $pdo, int $limit, DateTimeImmutable $now): ar
 function worker_pass_mail_match(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['matched' => 0, 'proposed' => 0, 'ignored' => 0, 'stub' => true]; }
 /** SLICE 6 — smart lists' member_count refreshed hourly. */
 function worker_pass_smart_lists(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['counted' => 0, 'stub' => true]; }
-/** SLICE 1 — crm_search_catch_up(): every record whose index row is older than its change. */
-function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['indexed' => 0, 'stub' => true]; }
-/** SLICE 6 — queued imports run in batches of 500 (dry run or real); bulk jobs beyond bulk_sync_rows. */
-function worker_pass_imports(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['rows' => 0, 'finished' => 0, 'stub' => true]; }
+/** crm_search_catch_up(): every record whose index row is older than its change (the triggers index as they write; this mends what they missed). Built in slice 2. */
+function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    return ['indexed' => (int) one_value($pdo, 'SELECT crm_search_catch_up(:l)', ['l' => $limit])];
+}
+/**
+ * SLICE 2 — queued imports run (leads-and-conversion.md §4): a dry run in one rolled-back transaction, a real run in committed batches of 500 (an import
+ * left `running` by an interrupted pass resumes after its last committed row). One import that fails is marked failed with the sentence; the next runs.
+ * Logged import.dry_run / import.done with the counts (the maker's run; the pass's actor is none).
+ */
+function worker_pass_imports(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/imports/runner.php';
+    $done = 0;
+    $rows = 0;
+    $failed = 0;
+    $ids = $pdo->query("SELECT id FROM imports WHERE status IN ('queued', 'running') ORDER BY created_at, id LIMIT " . max(1, min(20, $limit)))->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($ids as $id) {
+        $id = (int) $id;
+        $pdo->prepare("UPDATE imports SET status = 'running' WHERE id = :id AND status IN ('queued', 'running')")->execute(['id' => $id]);
+        $dry = (bool) one_value($pdo, 'SELECT dry_run FROM imports WHERE id = :id', ['id' => $id]);
+        try {
+            $r = import_execute($pdo, $id, $dry);
+            $rows += $r['rows'];
+            $done++;
+            log_activity($pdo, $dry ? 'import.dry_run' : 'import.done', 'import', $id, ['source' => 'cron', 'actor_member_id' => null,
+                'after' => ['created' => $r['created'], 'updated' => $r['updated'], 'skipped' => $r['skipped'], 'refused' => $r['refused'], 'dry_run' => $dry]]);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            $pdo->exec("SELECT set_config('app.member_id', '', false)");
+            $failed++;
+            $msg = $e instanceof DomainException ? $e->getMessage() : 'The import stopped: ' . db_message($e, 'an error the log names.');
+            error_log('worker import ' . $id . ': ' . $e->getMessage());
+            $pdo->prepare("UPDATE imports SET status = 'failed', finished_at = now(), log = :m WHERE id = :id")->execute(['m' => mb_substr($msg, 0, 2000), 'id' => $id]);
+            log_activity($pdo, 'import.failed', 'import', $id, ['source' => 'cron', 'actor_member_id' => null, 'after' => ['message' => mb_substr($msg, 0, 200)]]);
+        }
+    }
+    return ['finished' => $done, 'rows' => $rows, 'failed' => $failed];
+}
 /** SLICE 6 — queued exports built (CSV); expired exports' files removed. */
 function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['built' => 0, 'expired' => 0, 'stub' => true]; }
 /** SLICE 8 — the outbox: email through MaluMail (malumail_send), texts to members through the kernel (kernel_send_text), retries with backoff. */

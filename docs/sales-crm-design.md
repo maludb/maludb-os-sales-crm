@@ -685,6 +685,11 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-10 — SLICE 2 LEADS, CONVERSION, THE INBOX, IMPORT, DUPLICATES AND MERGE BUILT AND PROVEN.** 11 screens and 15 actions; the worker's `imports` and
+`search_catch_up` passes real. `tests/phase3/slice2/run.sh`: 202 checks under php -S and under Apache; slice 1, Phase 2, Phase 0 and Phase 1 re-run green.
+**db/019** fixes `crm_assign_lead()` matching a rule against a missing field; the import's dedupe moved to indexed lookups (240 s → 20 s for 2,000 rows).
+The record: `docs/build-specs/leads-import.md` "Built and proven". **Next:** slice 3, the board (THE FIRST EXEMPLAR).
+
 **2026-10-09 — SLICE 1 ACCOUNTS AND CONTACTS (THE CRUD EXEMPLAR) BUILT AND PROVEN, the same day.** 8 screens and 15 actions: cards, full pages with tabs by
 anchor, forms with the record picker and the duplicate warning, custom fields, notes, attachments in the canonical store, tags, restrict / delete /
 restore across kinds. `tests/phase3/slice1/run.sh`: 234 checks under php -S and under Apache; Phase 2 (271 / 276), Phase 0 and Phase 1 re-run green.
