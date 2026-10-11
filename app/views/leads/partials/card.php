@@ -5,6 +5,7 @@ $words = ['overdue' => 'Overdue', 'today' => 'Due today', 'scheduled' => 'Next s
 $score = $l['score'] !== null ? (int) $l['score'] : null; ?>
 <div class="col-md-6 col-xl-4"><div class="card h-100 mb-0" id="lead-card-<?= $lid ?>"><div class="card-body d-flex flex-column">
     <div class="d-flex align-items-start gap-2">
+        <?= !empty($bulk) ? bulk_check('lead', $lid, true, (string) $l['label']) : '' ?>
         <span class="lead-score flex-shrink-0<?= $score === null ? ' lead-score-none' : '' ?>" style="--score: <?= (int) ($score ?? 0) ?>" title="<?= $score === null ? 'Not scored' : 'Score ' . $score ?>" id="lead-card-<?= $lid ?>-score"><span><?= $score === null ? '–' : $score ?></span></span>
         <div class="min-w-0 flex-grow-1">
             <div class="fw-semibold fs-14 text-truncate"><?php if ($l['restricted']): ?><i class="feather-lock me-1 text-warning" title="Restricted"></i><?php endif; ?><?= hx_link(with_back('/leads/' . $lid, $back), e($l['label']), 'text-dark', 'id="lead-card-' . $lid . '-link"') ?></div>

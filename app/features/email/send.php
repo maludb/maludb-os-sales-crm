@@ -20,6 +20,10 @@ require_once __DIR__ . '/../attachments/store.php';
 require_once __DIR__ . '/../settings/present.php';
 require_once __DIR__ . '/../activities/write.php';
 
+/** The provider answers a campaign's message is tried again after (a rate limit, a relay that was down), and how many tries it gets in all before it is `failed`. */
+const EMAIL_RETRYABLE_STATUSES = [429, 502, 503, 504];
+const EMAIL_CAMPAIGN_ATTEMPTS = 5;
+
 /** The domain of Message-IDs and of the sender: MAIL_FROM's (verified at MaluMail), else the application's host. */
 function email_domain(): string
 {
@@ -46,7 +50,7 @@ function email_by_unsub_token(PDO $pdo, string $token): ?array
     if (!preg_match('/^[a-f0-9]{48}$/', $token)) {
         return null;
     }
-    return one_row($pdo, "SELECT id, contact_id, to_address::text AS to_address FROM outbound_email WHERE message_id = :m AND status = 'sent'", ['m' => email_message_id_for($token)]);
+    return one_row($pdo, "SELECT id, contact_id, to_address::text AS to_address, campaign_id FROM outbound_email WHERE message_id = :m AND status = 'sent'", ['m' => email_message_id_for($token)]);
 }
 
 /** The text under every CRM-sent email: the business's footer (Markdown) and the unsubscribe line. Answers [text, html]. */
@@ -122,7 +126,8 @@ function email_provider_outcome(array $r): array
 /**
  * Send one draft row now. $row's sender must be the caller (a draft is its sender's alone). Answers ['state' => sent|suppressed|failed, 'error' => ?sentence,
  * 'outbound_id', 'contact_id', 'to', 'activity_id' => ?int]. Refuses (DomainException) a recipient who opted out — by name — a row not theirs or already sent, merge fields
- * left unfilled, an invitation for a meeting that is gone. $opts: invite_message (the line the seller wrote above an invitation). The advisory lock keeps a double click from sending twice.
+ * left unfilled, an invitation for a meeting that is gone. A CAMPAIGN's message (campaign_id) that the provider could not take for now (429, 502, 503, 504, a transport error) stays `queued` with attempts
+ * counted and retry_at set (answers state `retry`) until EMAIL_CAMPAIGN_ATTEMPTS; one sent moves its member from planned to sent. $opts: invite_message (the line the seller wrote above an invitation). The advisory lock keeps a double click from sending twice.
  */
 function email_deliver(PDO $pdo, int $id, array $opts = []): array
 {
@@ -131,7 +136,8 @@ function email_deliver(PDO $pdo, int $id, array $opts = []): array
         throw new DomainException('That email is being sent already.');
     }
     try {
-        $o = one_row($pdo, "SELECT id, to_address::text AS to_address, subject, body_text, contact_id, deal_id, template_id, has_ics, activity_id, in_reply_to, references_ids::text AS refs, is_private, status, sender_member_id
+        $o = one_row($pdo, "SELECT id, to_address::text AS to_address, subject, body_text, contact_id, deal_id, template_id, has_ics, activity_id, in_reply_to, references_ids::text AS refs, is_private, status, sender_member_id,
+                                   campaign_id, attempts
                               FROM outbound_email WHERE id = :id", ['id' => $id]);
         if ($o === null || (int) $o['sender_member_id'] !== $me) { throw new DomainException('Not found.'); }
         if ($o['status'] === 'sent') { throw new DomainException('That email was sent already.'); }
@@ -170,12 +176,21 @@ function email_deliver(PDO $pdo, int $id, array $opts = []): array
             $files[] = ['filename' => 'invite.ics', 'content_type' => 'text/calendar; charset=utf-8; method=REQUEST', 'content_base64' => base64_encode($ics)];
         }
         if ($files !== []) { $mail['attachments'] = $files; }
+        $retryable = false;
         try {
             $r = malumail_send($mail);
             [$state, $why] = email_provider_outcome($r);
+            $retryable = $state === 'failed' && in_array((int) $r['status'], EMAIL_RETRYABLE_STATUSES, true);
         } catch (RuntimeException $e) {
             $r = ['body' => [], 'message_id' => null];
+            $retryable = !str_contains($e->getMessage(), 'not configured');                          // a transport error is worth another try; a missing key is not
             [$state, $why] = ['failed', str_contains($e->getMessage(), 'not configured') ? 'Sending mail is not set up: MaluMail has no key here.' : 'MaluMail could not be reached; send it again in a moment.'];
+        }
+        if ($retryable && $o['campaign_id'] !== null && (int) $o['attempts'] + 1 < EMAIL_CAMPAIGN_ATTEMPTS) {        // a campaign's message is tried again by the worker: still queued, not before retry_at
+            $n = (int) $o['attempts'] + 1;
+            $pdo->prepare("UPDATE outbound_email SET attempts = :n, retry_at = now() + make_interval(mins => :m), error = :e WHERE id = :id")
+                ->execute(['n' => $n, 'm' => $n * $n, 'e' => mb_substr((string) $why, 0, 300), 'id' => $id]);
+            return ['state' => 'retry', 'error' => $why, 'outbound_id' => $id, 'contact_id' => $contact, 'to' => $to, 'name' => (string) $c['name'], 'activity_id' => null];
         }
         $activity = null;
         $pdo->beginTransaction();
@@ -187,12 +202,16 @@ function email_deliver(PDO $pdo, int $id, array $opts = []): array
             $st->execute(['s' => $subject, 'd' => $o['deal_id'], 'c' => $contact, 'me' => $me, 'o' => $id, 'src' => default_activity_kind_source(), 'p' => $o['is_private'] ? 't' : 'f']);
             $activity = (int) $st->fetchColumn();
             if ($o['template_id'] !== null) { $pdo->prepare('UPDATE email_templates SET usage_count = usage_count + 1 WHERE id = :t')->execute(['t' => $o['template_id']]); }
+            if ($o['campaign_id'] !== null) {                                                       // a campaign's member who was still planned is now sent (an opened or answered one keeps its status)
+                $pdo->prepare("UPDATE campaign_members SET status = 'sent' WHERE campaign_id = :c AND contact_id = :ct AND status = 'planned'")->execute(['c' => $o['campaign_id'], 'ct' => $contact]);
+            }
         } else {
             $pdo->prepare('UPDATE outbound_email SET status = :st, error = :e WHERE id = :id')->execute(['st' => $state, 'e' => mb_substr((string) $why, 0, 300), 'id' => $id]);
         }
         log_activity($pdo, 'email.send', 'outbound_email', $id, array_filter(['contact_id' => $contact, 'deal_id' => $o['deal_id']], static fn ($v) => $v !== null)
             + ['after' => ['contact_id' => $contact, 'deal_id' => $o['deal_id'] === null ? null : (int) $o['deal_id'], 'template_id' => $o['template_id'] === null ? null : (int) $o['template_id'], 'status' => $state,
-                           'attachments' => count($files) - ($o['has_ics'] ? 1 : 0), 'has_ics' => (bool) $o['has_ics'], 'activity_id' => $activity, 'error' => $state === 'sent' ? null : mb_substr((string) $why, 0, 160)]]);
+                           'attachments' => count($files) - ($o['has_ics'] ? 1 : 0), 'has_ics' => (bool) $o['has_ics'], 'activity_id' => $activity, 'error' => $state === 'sent' ? null : mb_substr((string) $why, 0, 160)]
+                           + ($o['campaign_id'] === null ? [] : ['campaign_id' => (int) $o['campaign_id']])]);
         $pdo->commit();
         return ['state' => $state, 'error' => $why, 'outbound_id' => $id, 'contact_id' => $contact, 'to' => $to, 'name' => (string) $c['name'], 'activity_id' => $activity];
     } finally {

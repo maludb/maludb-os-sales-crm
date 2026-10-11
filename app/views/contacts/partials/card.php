@@ -5,6 +5,7 @@ $nc = (string) ($c['next_colour'] ?? 'none');
 $name = $c['name'] !== '' ? $c['name'] : (string) $c['email']; ?>
 <div class="col-md-6 col-xl-4"><div class="card h-100 mb-0" id="contact-card-<?= $cid ?>"><div class="card-body d-flex flex-column">
     <div class="d-flex align-items-start gap-2">
+        <?= !empty($bulk) ? bulk_check('contact', $cid, true, $name) : '' ?>
         <span class="avatar-text avatar-md rounded-circle flex-shrink-0"><?= e(mb_strtoupper(mb_substr($name, 0, 1))) ?></span>
         <div class="min-w-0 flex-grow-1">
             <div class="fw-semibold fs-14 text-truncate"><?php if ($c['restricted']): ?><i class="feather-lock me-1 text-warning" title="Restricted"></i><?php endif; ?><?= hx_link(with_back('/contacts/' . $cid, $back), e($name), 'text-dark', 'id="contact-card-' . $cid . '-link"') ?></div>

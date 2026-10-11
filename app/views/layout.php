@@ -281,6 +281,7 @@ $groups = nav_groups();
     <script src="/assets/js/calendar.js"></script>   <!-- the calendar's drag and the activity form's kind (activities-calendar.md §1–§2); the links work without it -->
     <script src="/assets/js/record-picker.js"></script>   <!-- the record picker (design-system record-picker.md): after common-init -->
     <script src="/assets/js/tag-editor.js"></script>      <!-- the tag editor's suggestions (slice 1) -->
+    <script src="/assets/js/bulk.js"></script>           <!-- the bulk bar's count and confirm (slice 6); the bar posts without it -->
     <script src="/assets/js/theme-customizer-init.min.js"></script>
 </body>
 </html>

@@ -142,6 +142,7 @@ function find_deals(PDO $pdo, array $filters, int $page): array
     foreach (['account' => 'd.account_id', 'pipeline' => 'd.pipeline_id', 'stage' => 'd.stage_id'] as $k => $col) {
         if (($filters[$k] ?? null) !== null) { $w[] = "$col = :$k"; $a[$k] = (int) $filters[$k]; }
     }
+    if (($filters['in_list'] ?? null) !== null) { $w[] = 'd.deal_id IN (SELECT record_id FROM list_members WHERE list_id = :inlist)'; $a['inlist'] = (int) $filters['in_list']; }       // slice 6: the members of a static list
     if (($filters['contact'] ?? null) !== null) { $w[] = '(d.primary_contact_id = :contact OR EXISTS (SELECT 1 FROM deal_contacts dc WHERE dc.deal_id = d.deal_id AND dc.contact_id = :contact))'; $a['contact'] = (int) $filters['contact']; }
     $sql = 'SELECT d.deal_id, d.number, d.title, d.account_id, d.account_name, d.pipeline_id, d.stage_id, d.stage_name, d.value, d.currency, d.weighted_value, d.probability, d.expected_close_date,
                    d.status, d.owner_member_id, m.display_name AS owner_name, d.next_activity_at, d.next_colour, d.is_rotting, d.restricted, d.created_at, count(*) OVER () AS total

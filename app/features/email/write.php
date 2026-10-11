@@ -155,7 +155,7 @@ function email_set_attachments(PDO $pdo, int $draft, array $ids, int $me): void
 function email_fan_out(PDO $pdo, int $draft, int $me): array
 {
     $d = one_row($pdo, "SELECT cc_addresses::text AS cc, subject, body_text, deal_id, template_id, has_ics, activity_id, in_reply_to, references_ids::text AS refs, is_private
-                          FROM outbound_email WHERE id = :id AND sender_member_id = :me AND status IN ('queued', 'failed')", ['id' => $draft, 'me' => $me]);
+                          FROM outbound_email WHERE id = :id AND sender_member_id = :me AND status IN ('queued', 'failed') AND campaign_id IS NULL", ['id' => $draft, 'me' => $me]);
     if ($d === null) { throw new DomainException('Not found.'); }
     $ids = [$draft];
     foreach (pg_text_array((string) $d['cc']) as $addr) {

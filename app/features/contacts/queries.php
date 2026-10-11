@@ -51,7 +51,8 @@ function find_contacts(PDO $pdo, array $filters, int $page): array
     if (($filters['opt_out'] ?? null) === 'sms') { $w[] = 'c.sms_opt_out'; }
     if (($filters['tag'] ?? null) !== null) { $w[] = 'EXISTS (SELECT 1 FROM record_tags rt JOIN tags t ON t.id = rt.tag_id WHERE rt.record_type = \'contact\' AND rt.record_id = c.contact_id AND (t.slug = :tag OR lower(t.label) = lower(:tag)))'; $a['tag'] = $filters['tag']; }
     if (($filters['untouched_days'] ?? null) !== null) { $w[] = 'COALESCE(c.last_touched_at, c.created_at) < now() - make_interval(days => :ud)'; $a['ud'] = (int) $filters['untouched_days']; }
-    $order = ($filters['q'] ?? '') !== '' ? 'similarity(c.name, :q) DESC, c.name' : 'c.last_name NULLS LAST, c.first_name, c.contact_id';
+    if (($filters['in_list'] ?? null) !== null) { $w[] = 'c.contact_id IN (SELECT record_id FROM list_members WHERE list_id = :inlist)'; $a['inlist'] = (int) $filters['in_list']; }       // slice 6: the members of a static list
+    $order = ($filters['q'] ?? '') !== '' ? 'similarity(c.name, :q) DESC, c.name, c.contact_id' : 'c.last_name NULLS LAST, c.first_name, c.contact_id';
     $sql = 'SELECT c.contact_id, c.name, c.title, c.email, c.phone, c.mobile, c.account_id, c.account_name, c.lifecycle, c.role, c.is_primary, c.owner_member_id, m.display_name AS owner_name,
                    c.last_touched_at, c.next_activity_at, c.next_colour, c.email_opt_out, c.sms_opt_out, c.do_not_call, c.open_deals_count, c.restricted, c.tags, count(*) OVER () AS total
               FROM mcp_contacts c LEFT JOIN members m ON m.id = c.owner_member_id' . ($w ? ' WHERE ' . implode(' AND ', $w) : '') . " ORDER BY $order LIMIT " . CONTACT_PAGE . ' OFFSET ' . ((max(1, $page) - 1) * CONTACT_PAGE);

@@ -685,6 +685,11 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-11 — SLICE 6 CAMPAIGNS, LISTS, SEGMENTS, BULK ACTIONS AND EXPORTS BUILT AND PROVEN.** 9 screens and 18 actions; campaigns with results, members and an email queued per contact and SENT BY THE WORKER's `outbox`
+pass (db/022: `outbound_email.campaign_id`, attempts, retries; the planning model's decision); static and smart lists with one filter vocabulary (`lists/filters.php`) and a live count; the bulk bar on every list screen;
+exports built by the worker, downloaded once. `tests/phase3/slice6/run.sh`: 625 checks under php -S and under Apache; slices 1–5, Phase 2, Phase 0 and Phase 1 re-run green. The record:
+`docs/build-specs/campaigns-lists.md` "Built and proven".
+
 **2026-10-11 — SLICE 5 EMAIL BUILT AND PROVEN.** 7 screens and 10 actions; the logging mailbox's signed webhook and the worker's `mail_poll` and `mail_match` real (a message kept raw, matched by the
 database's `crm_match_inbound_email` onto contacts and the deal by thread or tag, a stranger proposed, a bounce ignored, a reply told to its owner); compose with templates and merge fields, drafts (their sender's
 alone), send through MaluMail (Reply-To the mailbox, a Message-ID of ours, the footer and the unsubscribe link, files, the meeting's ICS), the opt-out refused by name, `email_log`, private, the unmatched screen

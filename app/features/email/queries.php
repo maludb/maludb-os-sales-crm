@@ -100,7 +100,7 @@ function find_draft(PDO $pdo, int $id): ?array
 {
     return one_row($pdo, "SELECT o.id, o.to_address::text AS to_address, o.cc_addresses, o.subject, o.body_text, o.contact_id, o.deal_id, o.template_id, o.has_ics, o.activity_id, o.in_reply_to,
                                  o.references_ids, o.status, o.error, o.is_private, o.sender_member_id
-                            FROM outbound_email o WHERE o.id = :id AND o.sender_member_id = :me AND o.status IN ('queued', 'failed')", ['id' => $id, 'me' => (int) current_member_id()]);
+                            FROM outbound_email o WHERE o.id = :id AND o.sender_member_id = :me AND o.status IN ('queued', 'failed') AND o.campaign_id IS NULL", ['id' => $id, 'me' => (int) current_member_id()]);
 }
 
 /** The people an email is on, by name (matched_contact_ids): [{contact_id, name, account_name, email_opt_out}] the caller may see. */

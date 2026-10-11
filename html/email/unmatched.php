@@ -14,7 +14,7 @@ $status = in_array($s = request_string('status'), ['unmatched', 'proposed_lead']
 $list = unmatched_emails($pdo, $page, $status);
 $me = (int) current_member_id();
 $drafts = $pdo->prepare("SELECT o.id, o.subject, o.to_address::text AS to_address, o.status, o.error, o.created_at, c.name AS contact_name FROM outbound_email o LEFT JOIN contacts c ON c.id = o.contact_id
-                          WHERE o.sender_member_id = :me AND o.status IN ('queued', 'failed') ORDER BY o.created_at DESC LIMIT 10");
+                          WHERE o.sender_member_id = :me AND o.status IN ('queued', 'failed') AND o.campaign_id IS NULL ORDER BY o.created_at DESC LIMIT 10");
 $drafts->execute(['me' => $me]);
 $drafts = $drafts->fetchAll();
 log_screen_view($pdo, 'email-unmatched');

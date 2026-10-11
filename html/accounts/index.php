@@ -5,6 +5,7 @@ require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 2) . '/app/features/records/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/accounts/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/accounts/present.php';
+require_once dirname(__DIR__, 2) . '/app/features/bulk/select.php';
 require_login();
 require_right('records.read');
 $pdo = db();
@@ -17,4 +18,4 @@ if (wants_json()) {
 }
 $notices = ['deleted' => ['success', 'Deleted. It can be restored for a while.']];
 render_screen('Accounts', view('accounts/index.php', ['result' => $result, 'filters' => $filters, 'page' => $page, 'owners' => find_owners($pdo), 'views' => saved_views_of($pdo, 'account'),
-    'may' => ['create' => has_right('accounts.write')], 'notice' => $notices[$_GET['notice'] ?? ''] ?? null, 'back' => here_url()]), ['activeNav' => 'accounts', 'screen' => 'account-list', 'entity' => 'account']);
+    'may' => ['create' => has_right('accounts.write')], 'notice' => $notices[$_GET['notice'] ?? ''] ?? bulk_notice(), 'bulk' => bulk_enabled(), 'back' => here_url()]), ['activeNav' => 'accounts', 'screen' => 'account-list', 'entity' => 'account']);

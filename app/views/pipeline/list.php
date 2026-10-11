@@ -33,12 +33,14 @@ $cell = static function (string $c, array $d) use ($tz): string {
     <?php if ($groups === []): ?>
         <div class="card"><div class="card-body text-center py-4 text-muted" id="deal-list-empty">No deal matches.</div></div>
     <?php endif; ?>
+    <?php $bulkOn = !empty($bulk); ?>
+    <?= $bulkOn ? bulk_bar(db(), 'deal', $filters + ['pipeline' => (int) $pipeline['pipeline_id']], (int) $total, null, $back) : '' ?>
     <?php foreach ($groups as $gi => $g): ?>
     <div class="card mb-3" id="deal-list-group-<?= $gi ?>"><div class="card-header d-flex flex-wrap gap-2 align-items-baseline"><span class="fw-semibold"><?= e($g['name']) ?></span><span class="badge bg-soft-secondary text-secondary"><?= count($g['rows']) ?></span>
         <span class="ms-auto fs-12 text-muted"><?= e(money($g['value'], $currency)) ?> · <?= e(money($g['weighted'], $currency)) ?> weighted</span></div>
         <div class="table-responsive"><table class="table table-hover mb-0 deal-list-table">
-            <thead><tr><?php foreach ($columns as $c): ?><th class="fs-11 text-nowrap"><?= isset($sortable[$c]) ? hx_link(pipeline_url($pipeline, 'list', $filters, ['sort' => $sortable[$c]]), e(DEAL_LIST_COLUMNS[$c]) . ($sort === $sortable[$c] ? ' <i class="feather-chevron-down"></i>' : ''), 'text-muted', 'id="deal-list-sort-' . $c . '-' . $gi . '"') : e(DEAL_LIST_COLUMNS[$c]) ?></th><?php endforeach; ?></tr></thead>
-            <tbody><?php foreach ($g['rows'] as $d): ?><tr id="deal-list-row-<?= (int) $d['deal_id'] ?>"><?php foreach ($columns as $c): ?><td class="fs-12"><?= $cell($c, $d) ?></td><?php endforeach; ?></tr><?php endforeach; ?></tbody>
+            <thead><tr><?php if ($bulkOn): ?><th style="width:2rem"></th><?php endif; ?><?php foreach ($columns as $c): ?><th class="fs-11 text-nowrap"><?= isset($sortable[$c]) ? hx_link(pipeline_url($pipeline, 'list', $filters, ['sort' => $sortable[$c]]), e(DEAL_LIST_COLUMNS[$c]) . ($sort === $sortable[$c] ? ' <i class="feather-chevron-down"></i>' : ''), 'text-muted', 'id="deal-list-sort-' . $c . '-' . $gi . '"') : e(DEAL_LIST_COLUMNS[$c]) ?></th><?php endforeach; ?></tr></thead>
+            <tbody><?php foreach ($g['rows'] as $d): ?><tr id="deal-list-row-<?= (int) $d['deal_id'] ?>"><?php if ($bulkOn): ?><td><?= bulk_check('deal', (int) $d['deal_id'], true, (string) $d['title']) ?></td><?php endif; ?><?php foreach ($columns as $c): ?><td class="fs-12"><?= $cell($c, $d) ?></td><?php endforeach; ?></tr><?php endforeach; ?></tbody>
         </table></div></div>
     <?php endforeach; ?>
 </div>

@@ -30,13 +30,15 @@ $pages = (int) ceil($result['total'] / CONTACT_PAGE); ?>
         <?php if ($f['account'] !== null && $account_name !== null): ?><span class="badge bg-soft-primary text-primary align-self-center" id="contact-list-account">at <?= e($account_name) ?> <?= hx_link($query(['account' => null]), '<i class="feather-x"></i>', 'text-primary', 'aria-label="All accounts"') ?></span><?php endif; ?>
         <?php if ($f['tag'] !== null): ?><span class="badge bg-soft-primary text-primary align-self-center" id="contact-list-tag">tag: <?= e($f['tag']) ?> <?= hx_link($query(['tag' => null]), '<i class="feather-x"></i>', 'text-primary', 'aria-label="Clear the tag"') ?></span><?php endif; ?>
     </div>
+    <?php $bulkOn = !empty($bulk) && $result['rows'] !== []; ?>
     <div class="fs-12 text-muted mb-2" id="contact-list-total"><?= (int) $result['total'] ?> contact<?= $result['total'] === 1 ? '' : 's' ?></div>
     <?php if ($result['rows'] === []): ?>
         <div class="card" id="contact-list-empty-card"><div class="card-body"><div class="empty-state text-center py-4" id="contact-list-empty"><span class="avatar-text avatar-lg rounded mb-2"><i class="feather-users"></i></span>
             <div class="fw-semibold"><?= $f['q'] !== '' || $f['lifecycle'] !== null || $f['owner'] !== null ? 'Nobody matches.' : 'No contacts yet.' ?></div>
             <?php if ($may['create']): ?><div class="mt-2"><?= hx_link('/contacts/new', 'Add a contact', 'btn btn-primary btn-touch', 'id="contact-list-empty-new-btn"') ?></div><?php endif; ?></div></div></div>
     <?php else: ?>
-        <div class="row g-3" id="contact-list-cards"><?php foreach ($result['rows'] as $c) { echo view('contacts/partials/card.php', ['c' => $c, 'back' => $back]); } ?></div>
+        <?= $bulkOn ? bulk_bar(db(), 'contact', $filters, (int) $result['total'], null, $back) : '' ?>
+        <div class="row g-3" id="contact-list-cards"><?php foreach ($result['rows'] as $c) { echo view('contacts/partials/card.php', ['c' => $c, 'back' => $back, 'bulk' => $bulkOn]); } ?></div>
         <?php if ($pages > 1): ?><nav class="mt-3" id="contact-list-pagination"><ul class="pagination mb-0">
             <?php if ($page > 1): ?><li class="page-item"><?= hx_link($query(['page' => $page - 1]), 'Previous', 'page-link') ?></li><?php endif; ?>
             <li class="page-item disabled"><span class="page-link"><?= $page ?> of <?= $pages ?></span></li>

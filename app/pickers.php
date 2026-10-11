@@ -17,6 +17,7 @@ declare(strict_types=1);
  * (a sibling's catalog over K7 when a super-admin connected one — ids "inventory:<id>" / "gl:<id>"; none connected, no rows: the line is written by name).
  * Slice 4: activity (`deal` narrows to its activities), member (colleagues — the people, not agents: an activity's participants).
  * Slice 5: template (the email templates the caller may use — shared and their own, not archived).
+ * Slice 6: campaign and list are real (their screens exist); list takes `any` (smart lists too) and `writable` (only those the caller may add to).
  * A short enumeration (a kind, a role, a lifecycle, a size band) stays a <select>.
  */
 require_once __DIR__ . '/features/accounts/queries.php';
@@ -86,11 +87,13 @@ return [
         'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, 'SELECT name FROM mcp_campaigns WHERE campaign_id = :id', ['id' => $id])) === null || $v === false) ? null : (string) $v,
     ],
     'list' => [
-        'title' => 'Static lists', 'noun' => 'list', 'roles' => ['lists.own'], 'params' => [],
+        'title' => 'Static lists', 'noun' => 'list', 'roles' => ['lists.own'], 'params' => ['any', 'writable'],
         'search' => static function (PDO $pdo, string $q, array $p, int $page): array {
             $kind = in_array($_GET['record_kind'] ?? '', ['lead', 'contact', 'account', 'deal'], true) ? $_GET['record_kind'] : null;
-            return crm_simple_pick($pdo, "SELECT list_id, name, record_kind, member_count, count(*) OVER () AS total FROM mcp_lists WHERE kind = 'static' AND (CAST(:k AS text) IS NULL OR record_kind = CAST(:k AS text)) AND (:q = '' OR name ILIKE '%' || :q || '%') ORDER BY name", $q, $page,
-                static fn (array $r): array => ['id' => (int) $r['list_id'], 'label' => $r['name'], 'detail' => $r['record_kind'] . 's · ' . (int) $r['member_count']], ['k' => $kind]);
+            // slice 5: static lists only (an import's target); slice 6: `any` offers the smart ones too (a campaign takes a smart list as it is now), `writable` only the lists the caller may add to
+            $where = (empty($p['any']) ? "kind = 'static' AND " : '') . (empty($p['writable']) ? '' : "(owner_member_id = app_current_member_id() OR crm_has_right('lists.shared')) AND ");
+            return crm_simple_pick($pdo, "SELECT list_id, name, kind, record_kind, member_count, count(*) OVER () AS total FROM mcp_lists WHERE {$where}(CAST(:k AS text) IS NULL OR record_kind = CAST(:k AS text)) AND (:q = '' OR name ILIKE '%' || :q || '%') ORDER BY name", $q, $page,
+                static fn (array $r): array => ['id' => (int) $r['list_id'], 'label' => $r['name'], 'detail' => $r['record_kind'] . 's · ' . ($r['kind'] === 'smart' ? 'smart' : (int) $r['member_count'])], ['k' => $kind]);
         },
         'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, 'SELECT name FROM mcp_lists WHERE list_id = :id', ['id' => $id])) === null || $v === false) ? null : (string) $v,
     ],

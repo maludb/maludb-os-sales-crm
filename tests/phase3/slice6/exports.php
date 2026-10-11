@@ -1,0 +1,184 @@
+<?php
+/**
+ * Proof — exports (campaigns-lists.md "Proof"): export_create queues, the worker builds a CSV (or JSON) of the kind's columns as the maker — a record the maker cannot see is not in it; the download is a POST
+ * with the page's CSRF token, streamed as an attachment with nosniff, ONCE, and gone when it has expired; a cell that would run as a formula is written as text; the rights; the failed and the expired.
+ */
+require __DIR__ . '/lib.php';
+$x = run_tag();
+$since = last_activity_id();
+$mkt = role_actor(31, 'marketing');
+$acc = (int) post_as(26, '/accounts/save.php', ['name' => "Export Acct $x", 'industry' => 'Mining'])['json']['record_id'];
+$c = [];
+foreach (['Ada', 'Bo', 'Cy'] as $i => $n) { $c[$i] = contact_with("e$i-$x@exp-$x.example.invalid", $n, $acc, 26); }
+$sealed = (int) post_as(27, '/contacts/save.php', ['first_name' => 'Sealed', 'last_name' => "Export $x", 'email' => "sealed-$x@exp.example.invalid", 'account' => $acc])['json']['record_id'];
+post_as(27, '/records/restrict.php', ['kind' => 'contact', 'record' => $sealed]);
+foreach ([$c[0], $c[1], $c[2], $sealed] as $id) { post_as(27, '/tags/apply.php', ['kind' => 'contact', 'record' => $id, 'tag' => "exp-$x"]); }
+$exports = static fn (int $m): array => get_as($m, '/exports')['json']['data']['exports'] ?? [];
+$one = static fn (int $m, int $id): ?array => array_values(array_filter($exports($m), static fn ($e) => $e['export_id'] === $id))[0] ?? null;
+
+echo "1. Who may export what\n";
+ok(post_as(29, '/exports/create.php', ['kind' => 'contacts', 'filters' => json_encode(['tag' => "exp-$x"])])['code'] === 403, 'a Viewer has no export.own: 403');
+ok(html_as(29, '/exports')['code'] === 403, '…and no Exports page');
+$r = post_as(26, '/exports/create.php', ['kind' => 'contacts']);
+ok($r['code'] === 422 && str_contains(message_of($r), 'everything'), 'a Rep exporting every contact (no filter): needs export.shared — in words: ' . message_of($r));
+$r = post_role($mkt, '/exports/create.php', ['kind' => 'accounts', 'format' => 'csv']);
+ok($r['code'] === 200 && ($r['json']['record_id'] ?? 0) > 0, 'Marketing (export.shared) exports every account');
+$mktExport = (int) $r['json']['record_id'];
+ok(post_as(26, '/exports/create.php', ['kind' => 'report', 'filters' => '{}'])['code'] === 422, 'a report is exported from its own page: refused in words');
+ok(post_as(26, '/exports/create.php', ['kind' => 'nonsense'])['code'] === 422, 'an unknown kind: refused');
+ok(post_as(26, '/exports/create.php', ['kind' => 'contacts', 'format' => 'xls', 'filters' => json_encode(['tag' => "exp-$x"])])['code'] === 422, 'an unknown format: refused');
+ok(post_as(26, '/exports/create.php', ['kind' => 'list', 'list' => 999999])['code'] === 404, 'a list that is not there: 404');
+ok(post_as(26, '/exports/create.php', ['kind' => 'contacts', 'list' => 5, 'filters' => json_encode(['tag' => 'a'])])['code'] === 422, 'a list with a kind other than list: "say kind list"');
+
+echo "2. Queued, built by the worker as the maker\n";
+$r = post_as(26, '/exports/create.php', ['kind' => 'contacts', 'format' => 'csv', 'filters' => json_encode(['tag' => "exp-$x"])]);
+$e1 = (int) ($r['json']['record_id'] ?? 0);
+ok($r['code'] === 200 && $e1 > 0, 'export_create (Priya, contacts, a tag): ' . ($r['json']['did'] ?? $r['body']));
+$row = $one(26, $e1);
+ok($row !== null && $row['status'] === 'queued' && $row['state'] === 'queued' && $row['can_download'] === false && export_text($e1) === null && $row['download'] === null, 'queued: waiting its turn, no file, nothing to download yet');
+$h = html_as(26, '/exports')['body'];
+ok(str_contains($h, 'id="export-' . $e1 . '"') && str_contains($h, 'id="export-' . $e1 . '-state">Waiting its turn<') && str_contains($h, 'hx-trigger="every 5s"') && !str_contains($h, 'id="export-' . $e1 . '-download-btn"'), 'the page: the row, "Waiting its turn", it refreshes itself while one waits, no Download button yet');
+$rep = pass('exports');
+ok(($rep['built'] ?? 0) >= 1 && ($rep['failed'] ?? 1) === 0 && empty($rep['stub']), 'the worker\'s exports pass builds it: ' . json_encode($rep));
+$row = $one(26, $e1);
+ok($row['status'] === 'done' && $row['state'] === 'ready' && $row['item_count'] === 3 && $row['byte_size'] > 0 && $row['can_download'] === true && str_starts_with((string) $row['download'], '/exports/download.php'), 'done: ready to download, 3 rows, ' . $row['byte_size'] . ' bytes');
+$csv = csv_rows_of((string) export_text($e1));
+ok($csv[0] === ['Id', 'Name', 'Title', 'Email', 'Phone', 'Mobile', 'Account', 'Lifecycle', 'Role', 'Owner', 'Last touched', 'No email', 'No texts', 'Tags'], 'the contacts file has the kind\'s columns');
+$names = array_column(array_slice($csv, 1), 1);
+sort($names);
+ok(count($csv) === 4 && $names === ["Ada Mail $x", "Bo Mail $x", "Cy Mail $x"], 'three rows — Ada, Bo and Cy; the contact only Marco may see (Sealed) is not in it');
+ok(array_unique(array_column(array_slice($csv, 1), 13)) === ["exp-$x"] && array_unique(array_column(array_slice($csv, 1), 6)) === ["Export Acct $x"] && array_unique(array_column(array_slice($csv, 1), 11)) === ['no'], 'the tags, the account and the opt-out marks are written');
+$r = post_as(27, '/exports/create.php', ['kind' => 'contacts', 'filters' => json_encode(['tag' => "exp-$x"])]);
+$e2 = (int) $r['json']['record_id'];
+pass('exports');
+$csv2 = csv_rows_of((string) export_text($e2));
+ok(count($csv2) === 5 && in_array("Sealed Export $x", array_column($csv2, 1), true), 'the same filter exported by Marco holds the sealed contact too: four rows');
+ok($one(26, $e2) === null && $one(27, $e1) === null, 'an export is its maker\'s: not in the other\'s page');
+$adm = $exports(1);
+ok(array_filter($adm, static fn ($e) => $e['export_id'] === $e1) !== [], 'the CRM admin lists them all');
+$ev = q("SELECT action, after::text AS after, actor_member_id, source FROM activity_log WHERE id > :s AND action IN ('export.create', 'export.build') ORDER BY id", ['s' => $since]);
+ok(count(array_filter($ev, static fn ($l) => $l['action'] === 'export.create')) >= 3 && count(array_filter($ev, static fn ($l) => $l['action'] === 'export.build' && $l['actor_member_id'] === null && $l['source'] === 'cron')) >= 2, 'export.create (by the maker) and export.build (by the worker, source cron) are logged');
+ok(!str_contains(json_encode($ev), "Ada Mail") && !str_contains(json_encode($ev), "e0-$x@"), 'no name and no address in the log');
+
+echo "3. The download: a POST, once\n";
+[$jar, $csrf] = actor(26);
+$get = req('GET', '/exports/download.php?export=' . $e1, ['jar' => $jar]);
+ok($get['code'] === 302 && str_contains($get['location'], '/exports') && !str_contains($get['body'], 'Ada') && $one(26, $e1)['state'] === 'ready', 'a GET (a link a scanner follows) spends nothing: it goes to the page');
+$nocsrf = req('POST', '/exports/download.php', ['jar' => $jar, 'form' => ['export' => $e1]]);
+ok($nocsrf['code'] === 403 && $one(26, $e1)['state'] === 'ready', 'a POST without the page\'s CSRF token: 403, nothing spent');
+ok(req('POST', '/exports/download.php', ['jar' => actor(30)[0], 'headers' => ['X-CSRF-Token: ' . actor(30)[1]], 'form' => ['export' => $e1]])['code'] === 404, 'another seller: 404 — it is not theirs');
+ok(req('POST', '/exports/download.php', ['jar' => actor(1)[0], 'headers' => ['X-CSRF-Token: ' . actor(1)[1]], 'form' => ['export' => $e1]])['code'] === 404 && $one(26, $e1)['state'] === 'ready', 'the CRM admin sees it listed but cannot download another\'s file: 404');
+ok(req('POST', '/exports/download.php', ['jar' => $jar, 'headers' => ['Accept: application/json', 'X-CSRF-Token: ' . $csrf], 'form' => ['export' => $e1]])['code'] === 406, 'a tool (JSON) is not handed the file: it is a person\'s download');
+$dl = req('POST', '/exports/download.php', ['jar' => $jar, 'headers' => ['X-CSRF-Token: ' . $csrf], 'form' => ['export' => $e1]]);
+ok($dl['code'] === 200 && trim($dl['body']) === trim((string) export_text($e1)), 'the maker\'s POST streams the file');
+ok(preg_match('/^X-Content-Type-Options: nosniff\r?$/mi', $dl['headers']) === 1 && preg_match('/^Content-Disposition: attachment; filename="sales-crm-contacts-' . $e1 . '\.csv"\r?$/mi', $dl['headers']) === 1
+    && preg_match('/^Content-Type: text\/csv/mi', $dl['headers']) === 1 && preg_match('/^Content-Security-Policy: sandbox\r?$/mi', $dl['headers']) === 1 && preg_match('/^Cache-Control: no-store\r?$/mi', $dl['headers']) === 1, 'as an attachment, nosniff, text/csv, sandboxed, not cached');
+$again = req('POST', '/exports/download.php', ['jar' => $jar, 'headers' => ['X-CSRF-Token: ' . $csrf], 'form' => ['export' => $e1]]);
+ok($again['code'] === 302 && str_contains($again['location'], 'notice=gone') && !str_contains($again['body'], 'Ada'), 'the second time: no bytes — back to the page, "downloaded or expired; make another"');
+$row = $one(26, $e1);
+ok($row['state'] === 'downloaded' && $row['downloaded_at'] !== null && $row['can_download'] === false, 'the page says Downloaded and offers no button');
+ok(str_contains(html_as(26, '/exports?notice=gone')['body'], 'make another'), 'the note on the page');
+$dlog = q("SELECT after::text AS after FROM activity_log WHERE id > :s AND action = 'export.download'", ['s' => $since]);
+ok(count($dlog) === 1 && json_decode($dlog[0]['after'], true)['item_count'] === 3 && !str_contains($dlog[0]['after'], 'Ada'), 'export.download is logged once, with counts');
+pass('exports');
+ok(export_text($e1) === null, 'the worker removes a downloaded file (the row stays)');
+
+echo "4. Expires\n";
+$r = post_as(26, '/exports/create.php', ['kind' => 'contacts', 'filters' => json_encode(['tag' => "exp-$x"])]);
+$e3 = (int) $r['json']['record_id'];
+pass('exports');
+ok($one(26, $e3)['state'] === 'ready' && export_text($e3) !== null, 'a new one is ready');
+ok(strtotime($one(26, $e3)['expires_at']) > time() + 6 * 86400 && strtotime($one(26, $e3)['expires_at']) < time() + 8 * 86400, 'it expires in seven days');
+pg_run("UPDATE exports SET expires_at = now() - interval '1 minute' WHERE id = $e3");
+ok($one(26, $e3)['state'] === 'expired' && $one(26, $e3)['can_download'] === false, 'past its time it reads Expired');
+$gone = req('POST', '/exports/download.php', ['jar' => $jar, 'headers' => ['X-CSRF-Token: ' . $csrf], 'form' => ['export' => $e3]]);
+ok($gone['code'] === 302 && str_contains($gone['location'], 'notice=gone') && !str_contains($gone['body'], 'Ada'), 'and cannot be downloaded: no bytes');
+pass('exports');
+ok(export_text($e3) === null && (string) one('SELECT storage_path FROM exports WHERE id = :i', ['i' => $e3]) === '', 'the worker removes the expired file');
+
+echo "5. Other kinds; JSON; a list\n";
+$rj = post_as(26, '/exports/create.php', ['kind' => 'contacts', 'format' => 'json', 'filters' => json_encode(['tag' => "exp-$x"])]);
+$ej = (int) $rj['json']['record_id'];
+$lead = lead_make(26, ['company' => "Export Lead $x"]);
+post_as(26, '/tags/apply.php', ['kind' => 'lead', 'record' => $lead, 'tag' => "explead-$x"]);
+$rl = post_as(26, '/exports/create.php', ['kind' => 'leads', 'filters' => json_encode(['tag' => "explead-$x"])]);
+$el = (int) $rl['json']['record_id'];
+$ra = post_as(26, '/exports/create.php', ['kind' => 'accounts', 'filters' => json_encode(['industry' => 'Mining'])]);
+$ea = (int) $ra['json']['record_id'];
+$deal = deal_make(26, ['title' => "Export deal $x", 'value' => 1234, 'account' => $acc]);
+$rd = post_as(26, '/exports/create.php', ['kind' => 'deals', 'filters' => json_encode(['q' => "Export deal $x", 'owner' => 'me'])]);
+$ed = (int) $rd['json']['record_id'];
+$act = act_id(26, ['kind' => 'task', 'subject' => "Export task $x", 'due_at' => at('+2 days 10:00')]);
+$rt = post_as(26, '/exports/create.php', ['kind' => 'activities', 'filters' => json_encode(['q' => "Export task $x"])]);
+$et = (int) $rt['json']['record_id'];
+$list = (int) post_as(26, '/lists/save.php', ['name' => "Export list $x", 'kind' => 'static', 'record_kind' => 'contact'])['json']['record_id'];
+post_as(26, '/lists/add.php', ['list' => $list, 'records' => [$c[0], $c[1]]]);
+post_as(27, '/lists/add.php', ['list' => $list, 'record' => $sealed]);
+$rli = post_as(26, '/exports/create.php', ['kind' => 'list', 'list' => $list, 'format' => 'csv']);
+$eli = (int) $rli['json']['record_id'];
+$smart = (int) post_as(26, '/lists/save.php', ['name' => "Export smart $x", 'kind' => 'smart', 'record_kind' => 'contact', 'filter' => ['tag' => "exp-$x"]])['json']['record_id'];
+$rsm = post_as(26, '/exports/create.php', ['kind' => 'list', 'list' => $smart]);
+$esm = (int) $rsm['json']['record_id'];
+ok(min($ej, $el, $ea, $ed, $et, $eli, $esm) > 0, 'seven more queued: contacts as JSON, leads, accounts, deals, activities, a static list and a smart list');
+$rep = pass('exports');
+ok(($rep['built'] ?? 0) === 7 && ($rep['failed'] ?? 1) === 0, 'the worker builds all seven: ' . json_encode($rep));
+$j = json_decode((string) export_text($ej), true);
+ok(is_array($j) && $j['kind'] === 'contacts' && $j['count'] === 3 && count($j['rows']) === 3 && $j['columns'][1] === 'Name' && isset($j['rows'][0]['Email']) && isset($j['exported_at']), 'the JSON export: kind, count, columns, rows keyed by column name');
+$cl = csv_rows_of((string) export_text($el));
+ok($cl[0][1] === 'Name' && $cl[0][4] === 'Company' && count($cl) === 2, 'leads: the lead\'s columns, her one lead');
+ok(in_array("Export Lead $x", array_column(csv_rows_of((string) export_text($el)), 4), true), '…her lead is the row (company column)');
+$ca = csv_rows_of((string) export_text($ea));
+ok($ca[0][1] === 'Name' && $ca[0][2] === 'Domain' && in_array("Export Acct $x", array_column($ca, 1), true), 'accounts: their columns, filtered by industry');
+$cd = csv_rows_of((string) export_text($ed));
+ok($cd[0][2] === 'Title' && $cd[0][5] === 'Value' && count($cd) === 2 && $cd[1][2] === "Export deal $x" && $cd[1][5] === '1234.00', 'deals: number, title, account, stage, the value as a number: ' . json_encode($cd[1] ?? null));
+$ct = csv_rows_of((string) export_text($et));
+ok($ct[0][2] === 'Subject' && in_array("Export task $x", array_column($ct, 2), true), 'activities: subject and when');
+$cli = csv_rows_of((string) export_text($eli));
+$nl = array_column(array_slice($cli, 1), 1);
+sort($nl);
+ok($nl === ["Ada Mail $x", "Bo Mail $x"], 'a static list: its members she may see — the sealed contact Marco put in it is not in her file');
+$csm = csv_rows_of((string) export_text($esm));
+ok(count($csm) === 4, 'a smart list: the filter run as her: three');
+$ok = q("SELECT id, kind FROM exports WHERE id IN ($ej, $el, $ea, $ed, $et, $eli, $esm) AND status = 'done'");
+ok(count($ok) === 7, 'all seven are done');
+
+echo "6. A cell that would run as a formula is text\n";
+$ev1 = contact_with("f1-$x@exp-$x.example.invalid", '=HYPERLINK("http://evil.example/","click")', $acc, 26, ['last_name' => "Formula $x"]);
+$ev2 = contact_with("f2-$x@exp-$x.example.invalid", '+1+1', $acc, 26);
+$ev3 = contact_with("f3-$x@exp-$x.example.invalid", '-2+3', $acc, 26);
+$ev4 = contact_with("f4-$x@exp-$x.example.invalid", '@SUM(A1:A9)', $acc, 26);
+foreach ([$ev1, $ev2, $ev3, $ev4] as $id) { post_as(26, '/tags/apply.php', ['kind' => 'contact', 'record' => $id, 'tag' => "formula-$x"]); }
+post_as(26, '/contacts/save.php', ['contact' => $ev1, 'title' => '=1+1', 'phone' => '-5']);
+$rf = post_as(26, '/exports/create.php', ['kind' => 'contacts', 'filters' => json_encode(['tag' => "formula-$x"])]);
+$ef = (int) $rf['json']['record_id'];
+pass('exports');
+$raw = (string) export_text($ef);
+$cf = csv_rows_of($raw);
+$cells = [];
+foreach (array_slice($cf, 1) as $row) { foreach ($row as $cell) { $cells[] = $cell; } }
+$dangerous = array_filter($cells, static fn ($v) => $v !== '' && strpbrk($v[0], "=+-@\t\r") !== false && !preg_match('/^-?\d+(\.\d+)?$/', $v));
+ok($dangerous === [], 'no cell begins with = + - @ (except a plain number): ' . json_encode(array_values($dangerous)));
+ok(in_array("'=HYPERLINK(\"http://evil.example/\",\"click\") Formula $x", array_column($cf, 1), true) || str_contains($raw, "'=HYPERLINK"), 'the formula is kept, written as text with a leading apostrophe');
+ok(str_contains($raw, "'+1+1") && str_contains($raw, "'-2+3") && str_contains($raw, "'@SUM(A1:A9)") && in_array("'=1+1", array_column($cf, 2), true), 'the same for +, - and @ and for a title');
+ok(in_array('-5', array_column($cf, 4), true), 'a plain number (a phone of "-5") is left as it is: it cannot run');
+$jf = post_as(26, '/exports/create.php', ['kind' => 'contacts', 'format' => 'json', 'filters' => json_encode(['tag' => "formula-$x"])]);
+pass('exports');
+$jj = json_decode((string) export_text((int) $jf['json']['record_id']), true);
+ok(is_array($jj) && in_array('=1+1', array_column($jj['rows'], 'Title'), true), 'JSON keeps the text as it is: no formula to run');
+
+echo "7. Failed\n";
+$gone = (int) post_as(26, '/lists/save.php', ['name' => "Vanishing $x", 'kind' => 'static', 'record_kind' => 'contact'])['json']['record_id'];
+$rg = post_as(26, '/exports/create.php', ['kind' => 'list', 'list' => $gone]);
+$eg = (int) $rg['json']['record_id'];
+post_as(26, '/lists/delete.php', ['list' => $gone]);
+$rep = pass('exports');
+$er = $one(26, $eg);
+ok(($rep['failed'] ?? 0) === 1 && $er['status'] === 'failed' && $er['state'] === 'failed' && str_contains((string) $er['error'], 'list') && export_text($eg) === null, 'an export whose list went before it was made fails with a sentence: ' . ($er['error'] ?? ''));
+ok(str_contains(html_as(26, '/exports')['body'], 'id="export-' . $eg . '-error"') && preg_match('/id="export-' . $eg . '-state">Failed</', html_as(26, '/exports')['body']) === 1, 'and the page shows Failed with the sentence');
+$ev = q("SELECT action FROM activity_log WHERE id > :s AND action = 'export.failed'", ['s' => $since]);
+ok(count($ev) === 1, 'export.failed is logged');
+$H = html_as(26, '/exports')['body'];
+ok(preg_match('/id="export-' . $ef . '-download-btn"/', $H) === 1 && preg_match('/<form method="post" action="\/exports\/download\.php"/', $H) === 1, 'the Download button is a POST form');
+$reg = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/mcp/action_registry.json'), true);
+ok(empty($reg['actions']['export_create']['approval']) && !empty($reg['screens']['export-list']['built']), 'export_create is free for an agent; export-list reads as built');
+finish();

@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-11T12:26:43+00:00",
+    "generated_at": "2026-10-11T13:45:16+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -567,8 +567,8 @@
                 "kind",
                 "owner"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "campaign-view": {
             "screen": "campaign-view",
@@ -576,7 +576,7 @@
             "section": "Campaigns, lists, segments and bulk actions (slice 6)",
             "when": "one campaign: members and their status, the leads and deals it produced (value won and open), cost per lead and per won deal",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "campaign-add": {
@@ -585,7 +585,7 @@
             "section": "Campaigns, lists, segments and bulk actions (slice 6)",
             "when": "a campaign: name, kind, status, dates, budget, expected leads, utm, owner, description",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "campaign-edit": {
@@ -594,7 +594,7 @@
             "section": "Campaigns, lists, segments and bulk actions (slice 6)",
             "when": "to change a campaign",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "list-list": {
@@ -605,8 +605,8 @@
             "params": [
                 "record_kind"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "list-view": {
             "screen": "list-view",
@@ -616,7 +616,7 @@
             "params": [
                 "page"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "list-add": {
@@ -628,7 +628,7 @@
                 "record_kind",
                 "filters"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "list-edit": {
@@ -637,7 +637,7 @@
             "section": "Campaigns, lists, segments and bulk actions (slice 6)",
             "when": "to change a list's name, filters, sharing",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "export-list": {
@@ -646,7 +646,7 @@
             "section": "Campaigns, lists, segments and bulk actions (slice 6)",
             "when": "my exports: ready to download, being made, expiring",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "reports": {
@@ -4580,7 +4580,7 @@
             "who": "campaigns.manage",
             "agent": true,
             "record_id": "the campaign",
-            "built": false
+            "built": true
         },
         "campaign_update": {
             "action": "campaign_update",
@@ -4667,7 +4667,7 @@
             "who": "campaigns.manage",
             "agent": true,
             "record_id": "the campaign",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "campaign_member_add": {
@@ -4707,7 +4707,7 @@
             "who": "campaigns.manage or contacts.write",
             "agent": true,
             "record_id": "the campaign",
-            "built": false
+            "built": true
         },
         "campaign_member_status": {
             "action": "campaign_member_status",
@@ -4740,7 +4740,7 @@
             "who": "campaigns.manage",
             "agent": true,
             "record_id": "the campaign",
-            "built": false
+            "built": true
         },
         "campaign_member_remove": {
             "action": "campaign_member_remove",
@@ -4767,7 +4767,7 @@
             "who": "campaigns.manage",
             "agent": true,
             "record_id": "the campaign",
-            "built": false
+            "built": true
         },
         "campaign_email_send": {
             "action": "campaign_email_send",
@@ -4806,7 +4806,7 @@
             "who": "campaigns.manage and email.send",
             "agent": true,
             "record_id": "the campaign",
-            "built": false
+            "built": true
         },
         "list_create": {
             "action": "list_create",
@@ -4857,7 +4857,7 @@
             "who": "lists.own",
             "agent": true,
             "record_id": "the list",
-            "built": false
+            "built": true
         },
         "list_update": {
             "action": "list_update",
@@ -4914,7 +4914,7 @@
             "who": "own or lists.shared",
             "agent": true,
             "record_id": "the list",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "list_delete": {
@@ -4936,7 +4936,7 @@
             "who": "own or lists.shared",
             "agent": true,
             "record_id": "the list",
-            "built": false
+            "built": true
         },
         "list_add": {
             "action": "list_add",
@@ -4963,7 +4963,7 @@
             "who": "own or lists.shared",
             "agent": true,
             "record_id": "the list",
-            "built": false
+            "built": true
         },
         "list_remove": {
             "action": "list_remove",
@@ -4990,7 +4990,7 @@
             "who": "own or lists.shared",
             "agent": true,
             "record_id": "the list",
-            "built": false
+            "built": true
         },
         "bulk_assign": {
             "action": "bulk_assign",
@@ -5035,7 +5035,7 @@
             "who": "records.bulk",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "bulk_tag": {
             "action": "bulk_tag",
@@ -5086,7 +5086,7 @@
             "who": "records.bulk or tags.apply",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "bulk_update": {
             "action": "bulk_update",
@@ -5137,7 +5137,7 @@
             "who": "records.bulk",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "bulk_campaign_add": {
             "action": "bulk_campaign_add",
@@ -5182,7 +5182,7 @@
             "who": "campaigns.manage",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "bulk_list_add": {
             "action": "bulk_list_add",
@@ -5215,7 +5215,7 @@
             "who": "own or lists.shared",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "bulk_delete": {
             "action": "bulk_delete",
@@ -5254,7 +5254,7 @@
             "who": "records.bulk",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         },
         "export_create": {
             "action": "export_create",
@@ -5299,7 +5299,7 @@
             "who": "export.own (export.shared for every record)",
             "agent": true,
             "record_id": "the export",
-            "built": false
+            "built": true
         },
         "report_export": {
             "action": "report_export",

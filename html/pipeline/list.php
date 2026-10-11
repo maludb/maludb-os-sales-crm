@@ -11,6 +11,7 @@ require_once dirname(__DIR__, 2) . '/app/features/deals/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/deals/present.php';
 require_once dirname(__DIR__, 2) . '/app/features/views/queries.php';
 require_once dirname(__DIR__, 2) . '/app/features/leads/queries.php';
+require_once dirname(__DIR__, 2) . '/app/features/bulk/select.php';
 require_login();
 require_right('records.read');
 $pdo = db();
@@ -41,5 +42,6 @@ if (wants_json()) {
 render_screen($pipeline['name'] . ' — list', view('pipeline/list.php', ['pipeline' => $pipeline, 'groups' => array_values($groups), 'total' => count($rows), 'filters' => $filters, 'columns' => $columns,
     'group' => $group, 'sort' => $sort, 'pipelines' => find_pipelines($pdo), 'views' => my_saved_views($pdo, 'deal'), 'owners' => find_owners($pdo), 'teams' => find_teams($pdo),
     'sources' => find_sources($pdo, false), 'back' => here_url(), 'currency' => base_currency($pdo),
-    'may' => ['create' => has_right('deals.write'), 'save_view' => true, 'share_view' => has_right('reports.team')], 'notice' => crm_notice($_GET['notice'] ?? null, ['view_saved' => ['success', 'Saved the view.']])]),
+    'may' => ['create' => has_right('deals.write'), 'save_view' => true, 'share_view' => has_right('reports.team')], 'notice' => crm_notice($_GET['notice'] ?? null, ['view_saved' => ['success', 'Saved the view.']]) ?? bulk_notice(),
+    'bulk' => bulk_enabled() && $rows !== []]),
     ['activeNav' => 'pipeline', 'screen' => 'deal-list', 'entity' => 'deal']);

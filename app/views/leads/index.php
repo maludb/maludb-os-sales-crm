@@ -30,13 +30,15 @@ $actions = ($may['import'] && nav_built('/import/form.php') ? hx_link('/import/n
     <div class="d-flex flex-wrap gap-3 fs-12 mb-2" id="lead-list-more"><?= hx_link('/leads/inbox', '<i class="feather-inbox me-1"></i>The inbox' . ($inbox > 0 ? ' (' . (int) $inbox . ')' : ''), 'fw-semibold', 'id="lead-list-inbox-link"') ?>
         <?php if ($may['import']): ?><?= hx_link('/import', '<i class="feather-upload me-1"></i>Imports', 'fw-semibold', 'id="lead-list-imports-link"') ?><?php endif; ?>
         <?= hx_link('/duplicates?kind=lead', '<i class="feather-copy me-1"></i>Duplicates', 'fw-semibold', 'id="lead-list-duplicates-link"') ?></div>
+    <?php $bulkOn = !empty($bulk) && $result['rows'] !== []; ?>
     <div class="fs-12 text-muted mb-2" id="lead-list-total"><?= (int) $result['total'] ?> lead<?= $result['total'] === 1 ? '' : 's' ?></div>
     <?php if ($result['rows'] === []): ?>
         <div class="card"><div class="card-body"><div class="empty-state text-center py-4" id="lead-list-empty"><span class="avatar-text avatar-lg rounded mb-2"><i class="feather-user-plus"></i></span>
             <div class="fw-semibold"><?= $f['q'] !== '' || $f['status'] !== null || $f['owner'] !== null ? 'No lead matches.' : 'No leads in work.' ?></div>
             <?php if ($may['create']): ?><div class="mt-2"><?= hx_link('/leads/new', 'Add a lead', 'btn btn-primary btn-touch', 'id="lead-list-empty-new-btn"') ?></div><?php endif; ?></div></div></div>
     <?php else: ?>
-        <div class="row g-3" id="lead-list-cards"><?php foreach ($result['rows'] as $l) { echo view('leads/partials/card.php', ['l' => $l, 'back' => $back]); } ?></div>
+        <?= $bulkOn ? bulk_bar(db(), 'lead', $filters, (int) $result['total'], null, $back) : '' ?>
+        <div class="row g-3" id="lead-list-cards"><?php foreach ($result['rows'] as $l) { echo view('leads/partials/card.php', ['l' => $l, 'back' => $back, 'bulk' => $bulkOn]); } ?></div>
         <?php if ($pages > 1): ?><nav class="mt-3" id="lead-list-pagination"><ul class="pagination mb-0">
             <?php if ($page > 1): ?><li class="page-item"><?= hx_link($query(['page' => $page - 1]), 'Previous', 'page-link') ?></li><?php endif; ?>
             <li class="page-item disabled"><span class="page-link"><?= $page ?> of <?= $pages ?></span></li>

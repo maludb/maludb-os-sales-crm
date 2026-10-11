@@ -41,14 +41,15 @@ function find_leads(PDO $pdo, array $filters, int $page): array
         $a['ql'] = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $filters['q']) . '%';
     }
     if (($filters['status'] ?? null) !== null) { $w[] = 'l.status = :st'; $a['st'] = $filters['status']; }
-    elseif (($filters['q'] ?? '') === '') { $w[] = "l.status IN ('new', 'working')"; }
+    elseif (($filters['q'] ?? '') === '' && ($filters['in_list'] ?? null) === null) { $w[] = "l.status IN ('new', 'working')"; }      // a static list shows all its members, converted or not (slice 6)
     if (($filters['owner'] ?? null) === 'none') { $w[] = 'l.owner_member_id IS NULL'; }
     elseif (($filters['owner'] ?? null) !== null) { $w[] = 'l.owner_member_id = :owner'; $a['owner'] = $filters['owner'] === 'me' ? (int) current_member_id() : (int) $filters['owner']; }
     if (($filters['source'] ?? null) !== null) { $w[] = 'l.source_id = :src'; $a['src'] = (int) $filters['source']; }
     if (($filters['campaign'] ?? null) !== null) { $w[] = 'l.campaign_id = :camp'; $a['camp'] = (int) $filters['campaign']; }
     if (($filters['tag'] ?? null) !== null) { $w[] = 'EXISTS (SELECT 1 FROM record_tags rt JOIN tags t ON t.id = rt.tag_id WHERE rt.record_type = \'lead\' AND rt.record_id = l.lead_id AND (t.slug = :tag OR lower(t.label) = lower(:tag)))'; $a['tag'] = $filters['tag']; }
     if (($filters['untouched_days'] ?? null) !== null) { $w[] = 'COALESCE(l.last_touched_at, l.created_at) < now() - make_interval(days => :ud)'; $a['ud'] = (int) $filters['untouched_days']; }
-    $order = ($filters['q'] ?? '') !== '' ? 'similarity(l.label, :q) DESC, l.created_at DESC' : 'l.created_at DESC, l.lead_id DESC';
+    if (($filters['in_list'] ?? null) !== null) { $w[] = 'l.lead_id IN (SELECT record_id FROM list_members WHERE list_id = :inlist)'; $a['inlist'] = (int) $filters['in_list']; }       // slice 6: the members of a static list
+    $order = ($filters['q'] ?? '') !== '' ? 'similarity(l.label, :q) DESC, l.created_at DESC, l.lead_id DESC' : 'l.created_at DESC, l.lead_id DESC';
     $sql = 'SELECT l.lead_id, l.label, l.first_name, l.last_name, l.company, l.title, l.email, l.status, l.score, l.source, l.source_id, l.owner_member_id, m.display_name AS owner_name,
                    l.last_touched_at, l.next_activity_at, l.next_colour, l.restricted, l.tags, l.created_at, l.converted_at, count(*) OVER () AS total
               FROM mcp_leads l LEFT JOIN members m ON m.id = l.owner_member_id WHERE ' . implode(' AND ', $w) . " ORDER BY $order LIMIT " . LEAD_PAGE . ' OFFSET ' . ((max(1, $page) - 1) * LEAD_PAGE);

@@ -63,3 +63,35 @@ bulk is refused; `bulk_delete` by an agent pauses; an export builds a CSV with t
 
 ## Open questions
 None.
+
+## Decisions taken here (the planning model's, binding) and Built and proven (2026-10-11)
+
+**Decision (planning model): a campaign's email is queued and the worker sends it.** Slice 5 sends inside the request and `outbound_email` had no link to a campaign, so: **db/022** adds `outbound_email.campaign_id`
+(+ a partial index on the queued rows), and — a small addition within it — `attempts` / `retry_at` for the retries, and appends `campaign_id` as the last column of `mcp_emails` (a queued or failed campaign message is
+nobody's draft and not shown there; a sent one is like any sent email). `campaign_email_send` sends NOTHING: in one transaction it makes one `queued` `outbound_email` row per allowed member contact (campaign id, the
+template filled for that contact through slice 5's merge functions, the caller the sender), skips and counts opted-out, addressless, behind-the-wall, unfillable and already-queued contacts (and leads: not emailed from
+here), and logs `campaign.email_send` with the counts, never a body. The worker's `outbox` pass sends exactly the queued rows that carry a `campaign_id` (at most the pass's limit) through slice 5's `email_deliver()`
+as the sender: sent → the member goes planned → sent; 429/502/503/504 or a transport error → still queued, tried again after 1, 4, 9 … minutes, five tries in all; a permanent answer → failed; an opt-out since, or a
+cancelled campaign → skipped (marked). The report keys `sent`, `retried`, `failed`, `skipped` are kept; the notification_outbox half is slice 8's (a comment marks where). Slice 5's draft lists (`/email/unmatched`, the
+record's Emails tab, `find_draft`, `email_fan_out`) exclude rows with a `campaign_id`. The campaign's page shows waiting · sent · not sent.
+
+**Built.** 9 screens and 18 actions: campaigns (cards, the page with results tiles from `crm_campaign_results`, members with status, what it produced, the email panel, notes), static lists and smart lists (the filter builder
+over the `find_*` vocabulary with a live count), the bulk bar on the four list screens and a list's page (assign, tag, set a field, add to a campaign, add to a list, delete, export; one transaction up to
+`bulk_sync_rows`), exports as CSV or JSON built by the worker as the maker. The worker's `smart_lists` (hourly counts as the owner), `exports` and the campaign half of `outbox` are real. Registry: 57 screens and 89
+actions built; 5 of this slice's paused for agents (`campaign_email_send`, `list_delete`, `bulk_assign`, `bulk_update`, `bulk_delete`).
+
+**Proven** by `tests/phase3/slice6/run.sh` on a fresh `crm_dev6`, under php -S and a real Apache — campaigns 64, outbox 62, lists 53, filters 114, bulk 123, exports 60, json 80, browser 69 (a real bar with ticks, Assign
+through the picker, "all matching", an export downloaded once, the builder's live count, a campaign made and emailed and sent by the worker, the bar with JavaScript off, a Viewer with no bar, sixteen screens at 375 and 1280).
+
+**Found and fixed:** the filter builder's live count was swapped into `#flash` (HTMX's default target) — `hx-target="this"`; the fake MaluMail gained the addresses `ratelimited` (429) and `brokenmail` (500).
+
+**Decisions taken here (within the spec):**
+- `app/features/lists/filters.php` is the one home of the vocabulary and CALLS the screens' own parsers (`lead_/contact_/account_filters_from_request`, `board_filters_from_request`, `activity_filters_from_request`)
+  by swapping the request they read; earlier slices' parsers are unchanged. The `find_*` of slices 1–4 gained an `in_list` filter (a static list's members; deals of every status, converted leads kept) and a total order.
+- A bulk request names ONE of `records[]`, `list`, `filters`; the bar adds `scope` (selected | all). `bulk_list_add` takes the destination as `target_list` (an agent may use `list` when no source list is named). One record the
+  caller may not change refuses the whole action with 403 naming it; a record behind the wall is the same 404; nothing matching is refused in words. Fields settable in bulk are a whitelist (`BULK_FIELDS`) plus `custom:<key>`.
+- Exports: `export_create` queues; the download is a POST with CSRF (a GET only redirects, so a scanner cannot spend it), once, expires after seven days, files of spent exports removed by the worker; export.shared for
+  an export with no filter. CSV cells starting `=` `+` `-` `@` (not plain numbers) get a leading apostrophe. Activities export the caller's own unless a filter says whose.
+- A smart list needs at least one filter; its kind and record kind are chosen once; a static list takes no filters. Deleting a list is a tombstone (`deleted_at`).
+- The unsubscribe door also sets the member `unsubscribed` in the send's campaign.
+- Added beyond the list: `app/features/campaigns/*`, `lists/*`, `bulk/*`, `exports/{queries,write,build}.php`, `html/assets/js/bulk.js`, `app/views/shared/bulk-check.php`, `lists/partials/preview.php`, `db/022_campaign_outbound.sql`.

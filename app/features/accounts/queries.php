@@ -65,7 +65,8 @@ function find_accounts(PDO $pdo, array $filters, int $page): array
     if (($filters['country'] ?? null) !== null) { $w[] = 'a.country = :cty'; $a['cty'] = $filters['country']; }
     if (($filters['tag'] ?? null) !== null) { $w[] = 'EXISTS (SELECT 1 FROM record_tags rt JOIN tags t ON t.id = rt.tag_id WHERE rt.record_type = \'account\' AND rt.record_id = a.account_id AND (t.slug = :tag OR lower(t.label) = lower(:tag)))'; $a['tag'] = $filters['tag']; }
     if (($filters['untouched_days'] ?? null) !== null) { $w[] = 'COALESCE(a.last_touched_at, a.created_at) < now() - make_interval(days => :ud)'; $a['ud'] = (int) $filters['untouched_days']; }
-    $order = ($filters['q'] ?? '') !== '' ? 'similarity(a.name, :q) DESC, a.name' : 'a.name';
+    if (($filters['in_list'] ?? null) !== null) { $w[] = 'a.account_id IN (SELECT record_id FROM list_members WHERE list_id = :inlist)'; $a['inlist'] = (int) $filters['in_list']; }       // slice 6: the members of a static list
+    $order = ($filters['q'] ?? '') !== '' ? 'similarity(a.name, :q) DESC, a.name, a.account_id' : 'a.name, a.account_id';
     $sql = 'SELECT a.account_id, a.name, a.domain, a.kind, a.industry, a.city, a.country, a.owner_member_id, m.display_name AS owner_name, a.last_touched_at, a.next_activity_at, a.next_colour,
                    a.open_deals_count, a.open_deals_value, a.contacts_count, a.restricted, a.tags, count(*) OVER () AS total
               FROM mcp_accounts a LEFT JOIN members m ON m.id = a.owner_member_id' . ($w ? ' WHERE ' . implode(' AND ', $w) : '') . " ORDER BY $order LIMIT " . ACCOUNT_PAGE . ' OFFSET ' . ((max(1, $page) - 1) * ACCOUNT_PAGE);

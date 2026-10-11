@@ -26,13 +26,15 @@ $pages = (int) ceil($result['total'] / ACCOUNT_PAGE); ?>
         <?php foreach ($views as $v): ?><?= hx_link('/accounts?view=' . (int) $v['saved_view_id'], e($v['name']), 'btn btn-touch btn-sm ' . ($f['view'] === (int) $v['saved_view_id'] ? 'btn-info' : 'btn-outline-info'), 'id="account-list-view-' . (int) $v['saved_view_id'] . '"') ?><?php endforeach; ?>
         <?php if ($f['tag'] !== null): ?><span class="badge bg-soft-primary text-primary align-self-center" id="account-list-tag">tag: <?= e($f['tag']) ?> <?= hx_link($query(['tag' => null]), '<i class="feather-x"></i>', 'text-primary', 'aria-label="Clear the tag"') ?></span><?php endif; ?>
     </div>
+    <?php $bulkOn = !empty($bulk) && $result['rows'] !== []; ?>
     <div class="fs-12 text-muted mb-2" id="account-list-total"><?= (int) $result['total'] ?> account<?= $result['total'] === 1 ? '' : 's' ?></div>
     <?php if ($result['rows'] === []): ?>
         <div class="card" id="account-list-empty-card"><div class="card-body"><div class="empty-state text-center py-4" id="account-list-empty"><span class="avatar-text avatar-lg rounded mb-2"><i class="feather-briefcase"></i></span>
             <div class="fw-semibold"><?= $f['q'] !== '' || $f['kind'] !== null || $f['owner'] !== null ? 'No account matches.' : 'No accounts yet.' ?></div>
             <?php if ($may['create']): ?><div class="mt-2"><?= hx_link('/accounts/new', 'Add an account', 'btn btn-primary btn-touch', 'id="account-list-empty-new-btn"') ?></div><?php endif; ?></div></div></div>
     <?php else: ?>
-        <div class="row g-3" id="account-list-cards"><?php foreach ($result['rows'] as $a) { echo view('accounts/partials/card.php', ['a' => $a, 'back' => $back]); } ?></div>
+        <?= $bulkOn ? bulk_bar(db(), 'account', $filters, (int) $result['total'], null, $back) : '' ?>
+        <div class="row g-3" id="account-list-cards"><?php foreach ($result['rows'] as $a) { echo view('accounts/partials/card.php', ['a' => $a, 'back' => $back, 'bulk' => $bulkOn]); } ?></div>
         <?php if ($pages > 1): ?><nav class="mt-3" id="account-list-pagination"><ul class="pagination mb-0">
             <?php if ($page > 1): ?><li class="page-item"><?= hx_link($query(['page' => $page - 1]), 'Previous', 'page-link') ?></li><?php endif; ?>
             <li class="page-item disabled"><span class="page-link"><?= $page ?> of <?= $pages ?></span></li>

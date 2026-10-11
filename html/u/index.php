@@ -32,4 +32,7 @@ if (!$already) {
          'after' => ['channel' => 'email', 'reason' => 'unsubscribe_link']]);
     $pdo->commit();
 }
+if ($send['campaign_id'] !== null) {                                                  // a campaign's email: that campaign's membership says so too (slice 6)
+    $pdo->prepare("UPDATE campaign_members SET status = 'unsubscribed' WHERE campaign_id = :c AND contact_id = :ct AND status IN ('planned', 'sent', 'opened')")->execute(['c' => $send['campaign_id'], 'ct' => $cid]);
+}
 $page('done', 200, $masked);

@@ -13,8 +13,8 @@ declare(strict_types=1);
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
  * PHASE 0: every pass is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10):
- * `smart_lists`, `exports` slice 6's; `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`,
- * `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`; since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`; since slice 5: `mail_poll`, `mail_match`.
+ * `dispatches`, `proposals` slice 8's (and the notification half of `outbox`); `tombstones_purge`, `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`;
+ * since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`; since slice 5: `mail_poll`, `mail_match`; since slice 6: `smart_lists`, `exports` and the campaign half of `outbox`.
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
 require_once dirname(__DIR__) . '/app/bootstrap.php';
@@ -220,8 +220,46 @@ function worker_pass_mail_match(PDO $pdo, int $limit, DateTimeImmutable $now): a
     require_once dirname(__DIR__) . '/app/features/email/matcher.php';
     return mail_match_pending($pdo, $limit);
 }
-/** SLICE 6 — smart lists' member_count refreshed hourly. */
-function worker_pass_smart_lists(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['counted' => 0, 'stub' => true]; }
+/**
+ * Smart lists' counts refreshed hourly (built in slice 6; campaigns-lists.md): each smart list not counted for an hour is counted AS ITS OWNER (a shared list with no owner as the one who made it) —
+ * the filter run through the kind's walled view, so the number is what the owner would see. A list whose owner can no longer see anything (not a member any more) is left as it was and counted as `failed`.
+ */
+function worker_pass_smart_lists(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/lists/write.php';
+    $st = $pdo->prepare("SELECT id, COALESCE(owner_member_id, created_by) AS actor FROM lists WHERE kind = 'smart' AND deleted_at IS NULL AND (counted_at IS NULL OR counted_at < CAST(:at AS timestamptz) - interval '1 hour')
+                          ORDER BY counted_at NULLS FIRST, id LIMIT :l");
+    $st->bindValue('at', $now->format(DATE_ATOM));
+    $st->bindValue('l', max(1, $limit), PDO::PARAM_INT);
+    $st->execute();
+    $counted = 0;
+    $failed = 0;
+    foreach ($st->fetchAll() as $l) {
+        if ($l['actor'] === null) { $failed++; continue; }
+        worker_act_as((int) $l['actor']);
+        try {
+            if (find_list($pdo, (int) $l['id']) === null) { $failed++; continue; }
+            list_recount($pdo, (int) $l['id']);
+            $counted++;
+        } catch (Throwable $e) {
+            $failed++;
+            error_log('worker smart_lists ' . $l['id'] . ': ' . $e->getMessage());
+        } finally {
+            worker_act_as(null);
+        }
+    }
+    return ['counted' => $counted, 'failed' => $failed];
+}
+
+/**
+ * Act as a member for the rows that follow (the schema's walls and the screens' parsers both read who is asking): app.member_id and the session's member. null = nobody again. A pass that acts as
+ * a member must call it with null when it is done — and must not call has_right()/is_manager(), which remember the first answer for the process.
+ */
+function worker_act_as(?int $member): void
+{
+    db()->prepare("SELECT set_config('app.member_id', :m, false)")->execute(['m' => $member === null ? '' : (string) $member]);
+    if ($member === null) { unset($_SESSION['member_id']); } else { $_SESSION['member_id'] = $member; }
+}
 /** crm_search_catch_up(): every record whose index row is older than its change (the triggers index as they write; this mends what they missed). Built in slice 2. */
 function worker_pass_search_catch_up(PDO $pdo, int $limit, DateTimeImmutable $now): array
 {
@@ -261,10 +299,92 @@ function worker_pass_imports(PDO $pdo, int $limit, DateTimeImmutable $now): arra
     }
     return ['finished' => $done, 'rows' => $rows, 'failed' => $failed];
 }
-/** SLICE 6 — queued exports built (CSV); expired exports' files removed. */
-function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['built' => 0, 'expired' => 0, 'stub' => true]; }
-/** SLICE 8 — the outbox: email through MaluMail (malumail_send), texts to members through the kernel (kernel_send_text), retries with backoff. */
-function worker_pass_outbox(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['sent' => 0, 'skipped' => 0, 'retried' => 0, 'failed' => 0, 'stub' => true]; }
+/**
+ * Exports built and spent files removed (built in slice 6): each queued (or interrupted running) export is made AS ITS MAKER — export_build writes storage/exports/<id>.csv|json through the same find_*
+ * as the screens, so what the maker may not see is not in it — and marked done; one that cannot be made is `failed` with the sentence. Then the files of exports that were downloaded or have expired are
+ * removed (the row is kept, with no file). Logged export.build / export.failed with the counts, never the rows.
+ */
+function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/exports/build.php';
+    $built = 0;
+    $rows = 0;
+    $failed = 0;
+    foreach ($pdo->query("SELECT id FROM exports WHERE status IN ('queued', 'running') ORDER BY created_at, id LIMIT " . max(1, min(10, $limit)))->fetchAll(PDO::FETCH_COLUMN) as $id) {
+        $id = (int) $id;
+        $pdo->prepare("UPDATE exports SET status = 'running' WHERE id = :id")->execute(['id' => $id]);
+        try {
+            $r = export_build($pdo, $id);
+            $built++;
+            $rows += $r['rows'];
+            log_activity($pdo, 'export.build', 'export', $id, ['source' => 'cron', 'actor_member_id' => null, 'after' => ['item_count' => $r['rows'], 'byte_size' => $r['bytes']]]);
+        } catch (Throwable $e) {
+            $failed++;
+            $msg = $e instanceof DomainException ? $e->getMessage() : 'The export could not be made: ' . db_message($e, 'an error the log names.');
+            error_log('worker export ' . $id . ': ' . $e->getMessage());
+            $pdo->prepare("UPDATE exports SET status = 'failed', finished_at = now(), log = :m WHERE id = :id")->execute(['m' => mb_substr($msg, 0, 1000), 'id' => $id]);
+            log_activity($pdo, 'export.failed', 'export', $id, ['source' => 'cron', 'actor_member_id' => null, 'after' => ['message' => mb_substr($msg, 0, 200)]]);
+        }
+    }
+    $expired = 0;
+    $st = $pdo->prepare("SELECT id, storage_path FROM exports WHERE storage_path IS NOT NULL AND (downloaded_at IS NOT NULL OR expires_at < CAST(:at AS timestamptz)) ORDER BY id LIMIT 200");
+    $st->execute(['at' => $now->format(DATE_ATOM)]);
+    foreach ($st->fetchAll() as $e) {
+        attachment_unlink((string) $e['storage_path']);
+        $pdo->prepare('UPDATE exports SET storage_path = NULL WHERE id = :id')->execute(['id' => $e['id']]);
+        $expired++;
+    }
+    return ['built' => $built, 'rows' => $rows, 'failed' => $failed, 'expired' => $expired];
+}
+/**
+ * The outbox. THE CAMPAIGN HALF is slice 6's (built): the queued outbound_email rows that carry a campaign_id — and only those — are sent one by one through email_deliver() (the same footer, unsubscribe
+ * link and Message-ID as a seller's own send), AS THE SENDER who queued them, at most the pass's limit per run: sent (the member goes from planned to sent), retried (the provider said 429, 502, 503, 504 or
+ * could not be reached — still queued, tried again after a minute, four, nine …, five tries in all), failed (a permanent answer, or the tries used up), skipped (the contact opted out since, or the campaign
+ * was cancelled — nothing goes). THE OTHER HALF — the notification_outbox rows (email through MaluMail with render_mail(), texts to members through the kernel) — is SLICE 8's: it adds its counts to the
+ * same four keys below. A person's own draft is never touched here.
+ */
+function worker_pass_outbox(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/email/send.php';
+    $out = ['sent' => 0, 'skipped' => 0, 'retried' => 0, 'failed' => 0];
+    $st = $pdo->prepare("SELECT o.id, o.sender_member_id, o.contact_id, o.campaign_id, c.status AS campaign_status, c.deleted_at AS campaign_deleted
+                           FROM outbound_email o LEFT JOIN campaigns c ON c.id = o.campaign_id
+                          WHERE o.campaign_id IS NOT NULL AND o.status = 'queued' AND (o.retry_at IS NULL OR o.retry_at <= CAST(:at AS timestamptz)) ORDER BY o.created_at, o.id LIMIT :l");
+    $st->bindValue('at', $now->format(DATE_ATOM));
+    $st->bindValue('l', max(1, $limit), PDO::PARAM_INT);
+    $st->execute();
+    $mark = static function (int $id, string $status, string $why) use ($pdo): void {
+        $pdo->prepare("UPDATE outbound_email SET status = :s, error = :e WHERE id = :id AND status = 'queued'")->execute(['s' => $status, 'e' => mb_substr($why, 0, 300), 'id' => $id]);
+    };
+    foreach ($st->fetchAll() as $row) {
+        $id = (int) $row['id'];
+        if ($row['campaign_deleted'] !== null || in_array($row['campaign_status'], ['cancelled'], true)) { $mark($id, 'failed', 'The campaign was cancelled, so this was not sent.'); $out['skipped']++; continue; }
+        if ($row['sender_member_id'] === null) { $mark($id, 'failed', 'The person who queued it is gone, so this was not sent.'); $out['failed']++; continue; }
+        worker_act_as((int) $row['sender_member_id']);
+        try {
+            $r = email_deliver($pdo, $id);
+            if ($r['state'] === 'sent') { $out['sent']++; }
+            elseif ($r['state'] === 'retry') { $out['retried']++; }
+            elseif ($r['state'] === 'suppressed') { $out['skipped']++; }
+            else { $out['failed']++; }
+        } catch (DomainException $e) {                                                  // a refusal in words: opted out since it was queued, no address, a merge field left, being sent already
+            $m = $e->getMessage();
+            if (str_contains($m, 'being sent already')) { continue; }
+            $optedOut = $row['contact_id'] !== null && !(bool) one_value($pdo, 'SELECT crm_email_allowed(:c)', ['c' => $row['contact_id']]);
+            $mark($id, $optedOut ? 'suppressed' : 'failed', $m);
+            $out[$optedOut ? 'skipped' : 'failed']++;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            error_log('worker outbox ' . $id . ': ' . $e->getMessage());
+            $mark($id, 'failed', 'It could not be sent: ' . db_message($e, 'an error the log names.'));
+            $out['failed']++;
+        } finally {
+            worker_act_as(null);
+        }
+    }
+    // ---- SLICE 8: the notification_outbox half (email with render_mail(), texts through the kernel) goes here and adds to $out['sent'|'skipped'|'retried'|'failed'] ----
+    return $out;
+}
 /** SLICE 8 — agent dispatches: a lead to qualify, a deal entering an ask-the-Assistant stage, a reminder for an agent → one chat turn, at most three attempts. */
 function worker_pass_dispatches(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['dispatched' => 0, 'retried' => 0, 'stub' => true]; }
 /** SLICE 8 — the Assistant's standing proposals the worker can make without a model (a possible duplicate found, a deal rotting). */

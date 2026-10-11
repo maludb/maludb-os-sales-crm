@@ -2,7 +2,7 @@
 /**
  * A FAKE MaluMail for the slice 7 proofs — `php -S 127.0.0.1:8294 tests/fake_malumail.php`: /mcp answers the mailbox MCP's list_messages, read_message and mark_message over the
  * messages the proofs put in $FAKE_MALUMAIL_STATE (JSON: {"mailboxes": {"<address>": {"<uid>": {headers, text, html, parts, attachments, flags, refuse_read}}}}); /v1/send logs each
- * body to $FAKE_MALUMAIL_LOG and answers as the address asks ("suppressed" → 400 all rejected, "rejected" → 200 with a rejection, "flaky" → 502, else 200 accepted with a message_id —
+ * body to $FAKE_MALUMAIL_LOG and answers as the address asks ("suppressed" → 400 all rejected, "rejected" → 200 with a rejection, "flaky" → 502, "ratelimited" → 429, "brokenmail" → 500, else 200 accepted with a message_id —
  * the one the body names (`message_id`, ours) when it does). Sales CRM, slice 5: POST /_deliver {address, uid?, headers{}, text, html?, parts?, attachments?, flags?, notify? (default true)} puts a
  * message in the mailbox and, as MaluMail does, posts the SIGNED new-mail notice ({type: message.new, address, folder, uid, message_id, from, subject, …}; X-MaluMail-Signature
  * "t=<unix>,v1=<HMAC-SHA256(secret, t.body)>") to $FAKE_MALUMAIL_WEBHOOK_URL with the secret in $FAKE_MALUMAIL_WEBHOOK_SECRET; answers {uid, webhook: the application's status}. Needs a server
@@ -20,6 +20,8 @@ if ($path === '/v1/send' && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $to = (string) ($in['to'] ?? '');
     if (str_contains($to, 'suppressed')) { http_response_code(400); echo json_encode(['error' => 'No deliverable recipients.', 'rejected' => [['email' => $to, 'reason' => 'suppressed:bounce']]]); exit; }
     if (str_contains($to, 'flaky')) { http_response_code(502); echo '{"error":"relay refused"}'; exit; }
+    if (str_contains($to, 'ratelimited')) { http_response_code(429); echo '{"error":"slow down"}'; exit; }          // slice 6: a retryable answer
+    if (str_contains($to, 'brokenmail')) { http_response_code(500); echo '{"error":"internal"}'; exit; }          // slice 6: a permanent one
     if (str_contains($to, 'rejected')) { echo json_encode(['status' => 'sent', 'accepted' => [], 'rejected' => [['email' => $to, 'reason' => 'invalid_address']], 'message_id' => null]); exit; }
     echo json_encode(['status' => 'sent', 'accepted' => [$to], 'rejected' => [], 'message_id' => (string) ($in['message_id'] ?? '<mm-' . $n . '@fake.malumail>')]); exit;
 }
