@@ -61,24 +61,32 @@ function mirror_apply_member(PDO $pdo, array $m, ?string $capability = null, boo
         'phone' => ($m['phone'] ?? '') !== '' ? (string) $m['phone'] : null,
         'tz' => ($m['timezone'] ?? '') !== '' ? (string) $m['timezone'] : 'UTC',
         'dupd' => $m['updated_at'] ?? null,
+        // A hand-off's claims carry no job title, phone or time zone (the feed does): a key the row does not carry keeps the stored
+        // value on conflict, so a sign-on never blanks what the directory said a minute ago (found by the Phase 2 sync proof, 2026-10-09).
+        'tg' => array_key_exists('job_title', $m) ? 't' : 'f',
+        'pg' => array_key_exists('phone', $m) ? 't' : 'f',
+        'zg' => array_key_exists('timezone', $m) ? 't' : 'f',
     ];
+    $keep = 'job_title = CASE WHEN CAST(:tg AS boolean) THEN EXCLUDED.job_title ELSE members.job_title END, '
+          . 'phone = CASE WHEN CAST(:pg AS boolean) THEN EXCLUDED.phone ELSE members.phone END, '
+          . 'timezone = CASE WHEN CAST(:zg AS boolean) THEN EXCLUDED.timezone ELSE members.timezone END';
     if ($capabilityKnown) {
         $args['cap'] = $capability;
-        $sql = <<<'SQL'
+        $sql = <<<SQL
             INSERT INTO members (id, member_kind, display_name, email, business_role, is_external, status, capability, job_title, phone, timezone, directory_updated_at, synced_at)
             VALUES (:id, :kind, :name, :email, :role, :ext, :status, :cap, :title, :phone, :tz, :dupd, now())
             ON CONFLICT (id) DO UPDATE SET member_kind = EXCLUDED.member_kind, display_name = EXCLUDED.display_name, email = EXCLUDED.email,
                 business_role = EXCLUDED.business_role, is_external = EXCLUDED.is_external, status = EXCLUDED.status, capability = EXCLUDED.capability,
-                job_title = EXCLUDED.job_title, phone = EXCLUDED.phone, timezone = EXCLUDED.timezone, directory_updated_at = EXCLUDED.directory_updated_at, synced_at = now()
+                {$keep}, directory_updated_at = EXCLUDED.directory_updated_at, synced_at = now()
         SQL;
     } else {
         // The feed says nothing about this application's grant: keep what the last hand-off said.
-        $sql = <<<'SQL'
+        $sql = <<<SQL
             INSERT INTO members (id, member_kind, display_name, email, business_role, is_external, status, capability, job_title, phone, timezone, directory_updated_at, synced_at)
             VALUES (:id, :kind, :name, :email, :role, :ext, :status, NULL, :title, :phone, :tz, :dupd, now())
             ON CONFLICT (id) DO UPDATE SET member_kind = EXCLUDED.member_kind, display_name = EXCLUDED.display_name, email = EXCLUDED.email,
                 business_role = EXCLUDED.business_role, is_external = EXCLUDED.is_external, status = EXCLUDED.status,
-                job_title = EXCLUDED.job_title, phone = EXCLUDED.phone, timezone = EXCLUDED.timezone, directory_updated_at = EXCLUDED.directory_updated_at, synced_at = now()
+                {$keep}, directory_updated_at = EXCLUDED.directory_updated_at, synced_at = now()
         SQL;
     }
     $pdo->prepare($sql)->execute($args);
