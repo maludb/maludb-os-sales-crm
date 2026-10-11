@@ -6,6 +6,7 @@ declare(strict_types=1);
  * (so a record they cannot see is not in it), kept seven days, downloaded ONCE. The views show an export to its maker and to the CRM admin; only the maker downloads it.
  */
 require_once dirname(__DIR__) . '/lists/queries.php';
+require_once dirname(__DIR__) . '/reports/queries.php';
 
 const EXPORT_KINDS = ['leads' => 'Leads', 'contacts' => 'Contacts', 'accounts' => 'Accounts', 'deals' => 'Deals', 'activities' => 'Activities', 'list' => 'A list', 'report' => 'A report'];
 const EXPORT_FORMATS = ['csv' => 'CSV', 'json' => 'JSON'];
@@ -57,6 +58,11 @@ function export_decorate(array $e): array
 function export_title(PDO $pdo, array $e): string
 {
     if ($e['kind'] === 'list') { return 'The list ' . ($e['list_name'] ?? ('#' . (int) $e['list_id'])); }
+    if ($e['kind'] === 'report') {
+        $name = function_exists('report_name') ? report_name((string) ($e['params']['report'] ?? '')) : null;
+        $f = is_array($e['params']['filters'] ?? null) ? $e['params']['filters'] : [];
+        return 'The ' . strtolower($name !== null ? REPORTS[$name][0] : 'a') . ' report' . (isset($f['from'], $f['to']) ? ' — ' . report_period_words($f) : (isset($f['month']) ? ' — ' . report_period_words($f) : ''));
+    }
     $base = EXPORT_KINDS[$e['kind']] ?? $e['kind'];
     $rk = EXPORT_RECORD_KIND[$e['kind']] ?? null;
     $w = $rk !== null && isset($e['params']['filters']) && is_array($e['params']['filters']) && $rk !== 'activity' ? filters_words($pdo, $rk, $e['params']['filters']) : [];

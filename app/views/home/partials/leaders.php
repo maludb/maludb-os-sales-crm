@@ -12,4 +12,5 @@
         <?php endforeach; ?>
         </div>
     <?php endif; ?>
+    <?php if (nav_built('/reports/leaderboard.php')): ?><div class="card-footer py-2"><?= hx_link('/reports/leaderboard', 'The leaderboard', 'fs-12 fw-semibold', 'id="home-leaders-link"') ?></div><?php endif; ?>
 </div>

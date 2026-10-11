@@ -235,3 +235,38 @@ a.deal-stage { display: flex; align-items: center; justify-content: center; font
   .cal-new { opacity: 1; width: 1.25rem; height: 1.25rem; }
   .outcome-btn { flex: 1 1 calc(50% - .5rem); min-width: 0; }
 }
+
+/* ---- Reports (slice 7): the charts are inline SVG; the colours are custom properties so the theme and dark mode swap them in one place.
+   Slot 1 is the theme's primary, "neutral" is for the rest; the other slots are the data-viz palette's validated hues. ---- */
+.rpt-chart { --rpt-s1: var(--bs-primary, #3454d1); --rpt-s2: #eb6834; --rpt-s3: #1baf7a; --rpt-s4: #eda100; --rpt-s5: #e87ba4; --rpt-s6: #008300; --rpt-s7: #6250d6; --rpt-s8: #e34948;
+  --rpt-neutral: #9a9893; --rpt-danger: #e34948; --rpt-ink: var(--bs-body-color, #283c50); --rpt-surface: var(--bs-body-bg, #fff); }
+html.app-skin-dark .rpt-chart { --rpt-s2: #d95926; --rpt-s3: #199e70; --rpt-s4: #c98500; --rpt-s5: #d55181; --rpt-s7: #9085e9; --rpt-s8: #e66767; --rpt-neutral: #7c7b78; --rpt-danger: #e66767; }
+.rpt-svg { display: block; width: 100%; height: auto; max-width: 100%; font-family: inherit; overflow: visible; }
+.rpt-svg .rpt-label { font-size: 12px; fill: var(--rpt-ink); }
+.rpt-svg .rpt-value { font-size: 11px; font-weight: 600; fill: var(--rpt-ink); }
+.rpt-svg .rpt-tick { font-size: 11px; fill: var(--bs-secondary-color, #6b7280); }
+.rpt-svg .rpt-axis, .rpt-svg .rpt-grid { stroke: var(--rpt-ink); stroke-opacity: .18; }
+.rpt-svg .rpt-mark { stroke: var(--rpt-ink); stroke-width: 2; }
+.rpt-svg .rpt-bar.rpt-s1, .rpt-swatch.rpt-s1 { fill: var(--rpt-s1); background: var(--rpt-s1); } .rpt-svg .rpt-bar.rpt-s2, .rpt-swatch.rpt-s2 { fill: var(--rpt-s2); background: var(--rpt-s2); }
+.rpt-svg .rpt-bar.rpt-s3, .rpt-swatch.rpt-s3 { fill: var(--rpt-s3); background: var(--rpt-s3); } .rpt-svg .rpt-bar.rpt-s4, .rpt-swatch.rpt-s4 { fill: var(--rpt-s4); background: var(--rpt-s4); }
+.rpt-svg .rpt-bar.rpt-s5, .rpt-swatch.rpt-s5 { fill: var(--rpt-s5); background: var(--rpt-s5); } .rpt-svg .rpt-bar.rpt-s6, .rpt-swatch.rpt-s6 { fill: var(--rpt-s6); background: var(--rpt-s6); }
+.rpt-svg .rpt-bar.rpt-s7, .rpt-swatch.rpt-s7 { fill: var(--rpt-s7); background: var(--rpt-s7); } .rpt-svg .rpt-bar.rpt-s8, .rpt-swatch.rpt-s8 { fill: var(--rpt-s8); background: var(--rpt-s8); }
+.rpt-svg .rpt-bar.rpt-neutral, .rpt-swatch.rpt-neutral { fill: var(--rpt-neutral); background: var(--rpt-neutral); }
+.rpt-svg .rpt-bar.rpt-danger, .rpt-swatch.rpt-danger { fill: var(--rpt-danger); background: var(--rpt-danger); }
+.rpt-svg .rpt-bar.rpt-ink, .rpt-swatch.rpt-ink { fill: var(--rpt-ink); background: var(--rpt-ink); }
+.rpt-svg .rpt-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.rpt-svg .rpt-dot { stroke: var(--rpt-surface); stroke-width: 2; }
+.rpt-svg .rpt-line.rpt-s1, .rpt-svg .rpt-dot.rpt-s1 { stroke: var(--rpt-s1); } .rpt-svg .rpt-dot.rpt-s1 { fill: var(--rpt-s1); stroke: var(--rpt-surface); }
+.rpt-svg .rpt-line.rpt-s3 { stroke: var(--rpt-s3); } .rpt-svg .rpt-dot.rpt-s3 { fill: var(--rpt-s3); }
+.rpt-svg .rpt-line.rpt-neutral { stroke: var(--rpt-neutral); } .rpt-svg .rpt-dot.rpt-neutral { fill: var(--rpt-neutral); }
+.rpt-svg .rpt-line.rpt-ink { stroke: var(--rpt-ink); } .rpt-svg .rpt-dot.rpt-ink { fill: var(--rpt-ink); }
+.rpt-svg .rpt-line.rpt-s2 { stroke: var(--rpt-s2); } .rpt-svg .rpt-dot.rpt-s2 { fill: var(--rpt-s2); }
+.rpt-svg .rpt-line.rpt-s4 { stroke: var(--rpt-s4); } .rpt-svg .rpt-dot.rpt-s4 { fill: var(--rpt-s4); }
+.rpt-svg .rpt-dashed { stroke-dasharray: 6 4; }
+.rpt-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: .5rem 0 0; font-size: 12px; }
+.rpt-legend li { display: flex; align-items: center; gap: .4rem; }
+.rpt-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.rpt-swatch-dashed { background: none !important; border-top: 2px dashed var(--rpt-ink); height: 0; border-radius: 0; }
+.rpt-swatch-mark { display: inline-block; width: 3px; height: 14px; background: var(--rpt-ink); }
+.report-figure { font-size: 1.75rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.report-card .report-figure { margin: .25rem 0; }

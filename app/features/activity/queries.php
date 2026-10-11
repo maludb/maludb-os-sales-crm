@@ -113,7 +113,7 @@ function activity_sentence(array $r): string
         'mail.ignored' => 'an email was set aside', 'note.add' => 'added a note', 'attachment.add' => 'attached a file',
         'record.delete' => 'deleted a record', 'record.restore' => 'restored a record', 'record.restrict' => 'restricted a record', 'records.merge' => 'merged records',
         'tag.apply' => 'tagged a record', 'tag.remove' => 'untagged a record', 'import.start' => 'started an import', 'import.rollback' => 'rolled back an import',
-        'campaign.create' => 'made a campaign', 'list.create' => 'made a list', 'export.create' => 'asked for an export',
+        'campaign.create' => 'made a campaign', 'list.create' => 'made a list', 'export.create' => 'asked for an export', 'report.view' => 'opened a report', 'report.export' => 'exported a report',
         'proposal.accept' => 'accepted a proposal', 'proposal.dismiss' => 'dismissed a proposal', 'key.mint' => 'minted a key', 'key.rotate' => 'rotated a key', 'key.revoke' => 'revoked a key',
         'share.read' => 'read a share', 'settings.save' => 'changed the settings', 'worker.pass' => 'the worker ran', 'notification.send' => 'sent a notice',
     ];

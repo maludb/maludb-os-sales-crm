@@ -685,6 +685,11 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-11 — SLICE 7 REPORTS, THE FORECAST REPORT AND THE HOME'S TILES BUILT AND PROVEN.** 10 screens and 1 action; nine reports as cards and pages (funnel, win rate, cycle time, sources, campaigns, activity, leaderboard, lost reasons, forecast), each a
+db/015 or db/017 function drawn by the server as inline SVG (bars, the funnel as stacked bars, lines per month; the table beside it is the accessible version), period presets resolved in the member's time zone, `report_export` through slice 6's
+`exports` (a small report at once by POST, a large one built by the worker as the maker). No migration. `tests/phase3/slice7/run.sh`: the checks under php -S and under Apache recorded in the spec; slices 1–6, Phase 2, Phase 0 and Phase 1 re-run green. The record:
+`docs/build-specs/reports-home.md` "Built and proven". Next: slice 8, agents, notifications, K7 and the API.
+
 **2026-10-11 — SLICE 6 CAMPAIGNS, LISTS, SEGMENTS, BULK ACTIONS AND EXPORTS BUILT AND PROVEN.** 9 screens and 18 actions; campaigns with results, members and an email queued per contact and SENT BY THE WORKER's `outbox`
 pass (db/022: `outbound_email.campaign_id`, attempts, retries; the planning model's decision); static and smart lists with one filter vocabulary (`lists/filters.php`) and a live count; the bulk bar on every list screen;
 exports built by the worker, downloaded once. `tests/phase3/slice6/run.sh`: 625 checks under php -S and under Apache; slices 1–5, Phase 2, Phase 0 and Phase 1 re-run green. The record:

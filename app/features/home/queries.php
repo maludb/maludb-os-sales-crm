@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/reports/queries.php';
+
 /**
  * The home (screen `home`; sso-shell.md "Query functions"; design §9 "Today"): what a seller looks at first in the morning.
  *   today        my activities due today and the open ones overdue (crm_my_activities('today'), db/017), overdue first

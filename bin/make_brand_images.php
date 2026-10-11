@@ -46,7 +46,8 @@ imagefill($im, 0, 0, imagecolorallocatealpha($im, 0, 0, 0, 127));
 imagealphablending($im, true);
 $m = mark(70);
 imagecopy($im, $m, 4, 10, 0, 0, 70, 70);
-$dark = imagecolorallocate($im, 33, 37, 41);
-imagettftext($im, 21, 0, 86, 55, $dark, $font, 'Sales CRM');
+// the name in a lighter brand blue (#4F6EF7): 4.6:1 on the light sidebar and 3.9:1 on the dark one — large bold text, readable in both skins (a near-black name vanished in dark mode)
+$name = imagecolorallocate($im, 79, 110, 247);
+imagettftext($im, 21, 0, 86, 55, $name, $font, 'Sales CRM');
 imagepng($im, $dir . '/logo-full.png');
 echo "brand images drawn in $dir\n";

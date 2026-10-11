@@ -4,7 +4,7 @@
     <div class="d-flex flex-wrap align-items-baseline gap-3">
         <div><div class="home-tile-figure" id="home-forecast-won"><?= e(money($f['won_value'], $s['currency'])) ?></div><div class="fs-11 text-muted">won</div></div>
         <div><div class="fw-semibold" id="home-forecast-weighted"><?= e(money($f['weighted'], $s['currency'])) ?></div><div class="fs-11 text-muted">weighted open</div></div>
-        <?php if ($q !== null && $q > 0): ?><div><div class="fw-semibold" id="home-forecast-quota"><?= (int) round(100 * (float) $f['won_value'] / $q) ?>%</div><div class="fs-11 text-muted">of <?= e(money($q, $s['currency'])) ?></div></div><?php endif; ?>
+        <?php if ($q !== null && $q > 0): $att = 100 * (float) $f['won_value'] / $q; $tone = report_tone($att); ?><div><div class="fw-semibold text-<?= e((string) $tone) ?>" id="home-forecast-quota"><?= (int) round($att) ?>%</div><div class="fs-11 text-muted">of <?= e(money($q, $s['currency'])) ?></div></div><?php endif; ?>
     </div>
     <div class="mt-2"><?= hx_link(nav_built('/reports/forecast.php') ? '/reports/forecast' : '/reports', 'The forecast', 'fs-12 fw-semibold', 'id="home-forecast-link"') ?></div>
 </div></div>

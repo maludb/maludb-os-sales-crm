@@ -8,6 +8,7 @@ declare(strict_types=1);
  */
 require_once __DIR__ . '/queries.php';
 require_once dirname(__DIR__) . '/attachments/store.php';
+require_once dirname(__DIR__) . '/reports/queries.php';
 
 /** The columns of a kind's export: [header, row key | callable(row): scalar]. The row keys are the find_* rows' (the screens' own queries). */
 function export_columns(string $recordKind): array
@@ -60,7 +61,12 @@ function export_build(PDO $pdo, int $id): array
     try {
         if (!db_bool($pdo, 'SELECT crm_is_member_here()')) { throw new DomainException('Its maker no longer has access, so nothing was exported.'); }
         $params = json_decode((string) $e['params'], true) ?: [];
-        if ($e['kind'] === 'list') {
+        if ($e['kind'] === 'report') {                                                     // a report: built as its maker, so a seller's team report holds their rows only
+            $name = report_name((string) ($params['report'] ?? '')) ?? throw new DomainException('That report is not built here.');
+            $rep = report($pdo, $name, is_array($params['filters'] ?? null) ? $params['filters'] : []);
+            $rk = 'report';
+            $page = static fn (int $p): array => ['rows' => $p === 1 ? $rep['rows'] : [], 'total' => count($rep['rows'])];
+        } elseif ($e['kind'] === 'list') {
             $l = find_list($pdo, (int) $e['list_id']) ?? throw new DomainException('The list is gone or no longer yours to see.');
             $rk = $l['record_kind'];
             $page = static fn (int $p): array => list_rows($pdo, (int) $l['list_id'], $p);
@@ -74,7 +80,7 @@ function export_build(PDO $pdo, int $id): array
             }
             $page = static fn (int $p): array => filters_find($pdo, $rk, $compact, $p);
         }
-        $cols = export_columns($rk);
+        $cols = $rk === 'report' ? array_map(static fn (array $c): array => [$c[0], static fn (array $row): mixed => report_cell($c[2], $row[$c[1]] ?? null)], $rep['columns']) : export_columns($rk);
         $rel = 'exports/' . $id . '.' . $e['format'];
         $abs = attachment_storage_dir() . '/' . $rel;
         if (!is_dir(dirname($abs)) && !mkdir(dirname($abs), 0750, true) && !is_dir(dirname($abs))) { throw new RuntimeException('export store: cannot make exports/'); }
@@ -101,7 +107,7 @@ function export_build(PDO $pdo, int $id): array
                     $first = false;
                 }
             }
-            if ($p * filters_page($rk) >= $r['total']) { break; }
+            if ($p * ($rk === 'report' ? max(1, $r['total']) : filters_page($rk)) >= $r['total']) { break; }
         }
         if ($e['format'] === 'json') { fwrite($fh, '],"count":' . $count . '}'); }
         fclose($fh);

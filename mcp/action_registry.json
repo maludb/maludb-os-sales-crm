@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-11T13:45:16+00:00",
+    "generated_at": "2026-10-11T15:09:46+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -655,8 +655,8 @@
             "section": "Reports and the forecast (slice 7)",
             "when": "the reports as cards with a number each: forecast, funnel, win rate, cycle time, sources, campaigns, activity, leaderboard, lost reasons",
             "params": [],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "report-funnel": {
             "screen": "report-funnel",
@@ -669,7 +669,7 @@
                 "to",
                 "owner"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-win-rate": {
@@ -682,7 +682,7 @@
                 "to",
                 "by"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-cycle-time": {
@@ -694,7 +694,7 @@
                 "from",
                 "to"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-sources": {
@@ -706,7 +706,7 @@
                 "from",
                 "to"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-campaigns": {
@@ -717,7 +717,7 @@
             "params": [
                 "status"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-activity": {
@@ -730,7 +730,7 @@
                 "to",
                 "team"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-leaderboard": {
@@ -742,7 +742,7 @@
                 "month",
                 "team"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-lost-reasons": {
@@ -754,7 +754,7 @@
                 "from",
                 "to"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "report-forecast": {
@@ -767,7 +767,7 @@
                 "months",
                 "team"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "proposals": {
@@ -5350,7 +5350,7 @@
             "who": "reports.team (a seller their own rows)",
             "agent": true,
             "record_id": "the export",
-            "built": false
+            "built": true
         },
         "proposal_accept": {
             "action": "proposal_accept",

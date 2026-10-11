@@ -203,7 +203,7 @@ function with_back(string $url, string $here): string
 
 /** The slice that builds each not-yet-built menu item, in words — the placeholders and the registry read it. */
 const NAV_SLICES = ['accounts' => 'slice 1', 'contacts' => 'slice 1', 'leads' => 'slice 2', 'pipeline' => 'slice 3', 'calendar' => 'slice 4', 'activities' => 'slice 4',
-    'campaigns' => 'slice 6', 'lists' => 'slice 6', 'reports' => 'slice 7', 'admin' => 'slice 9'];
+    'campaigns' => 'slice 6', 'lists' => 'slice 6', 'admin' => 'slice 9'];
 
 /**
  * A screen of the manifest that its slice has not built yet (Phase 2): the shell, the page header, one card saying which slice
