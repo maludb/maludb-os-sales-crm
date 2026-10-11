@@ -34,13 +34,15 @@ ok(page($j, '/accounts/999999')['code'] === 404 && page($j, '/leads/1/convert')[
 ok(page($j, '/email/in/1')['code'] === 404 && page($j, '/email/out/1')['code'] === 404 && page($j, '/email/sideways/1')['code'] === 404, '/email/{in|out}/{id} is rewritten to email/view.php: 404 until slice 5');
 ok(req('GET', '/u/' . str_repeat('a', 32))['code'] === 404 && req('GET', '/u/short')['code'] === 404, '/u/{token} is rewritten to u/index.php: 404 until slice 5; a malformed token 404');
 ok(page($j, '/attachments/1')['code'] === 404 && page($j, '/admin/pipelines/1/stages/new')['code'] === 404, '/attachments/{id} and /admin/pipelines/{id}/stages/new reach their files: 404 until slices 1 and 9');
-ok(page($j, '/log/call')['code'] === 404 && page($j, '/calendar/grid')['code'] === 404, '/log/call and /calendar/grid: 404 until slice 4');
+$s4 = is_file(dirname(__DIR__, 2) . '/html/log/call.php');                          // slice 4 builds them: 404 before, the screen after
+ok(page($j, '/log/call')['code'] === ($s4 ? 200 : 404) && page($j, '/calendar/grid')['code'] === ($s4 ? 200 : 404) && ($s4 ? page($j, '/activities/999999/complete')['code'] === 404 : true),
+   '/log/call and /calendar/grid' . ($s4 ? ' reach their files (built); a missing activity\'s page is 404' : ': 404 until slice 4'));
 ok(req('GET', '/nosuchscreen', ['jar' => $j])['code'] === 404, 'an unknown path: 404');
 $h = req('GET', '/api/v1/health');
 $hb = json_decode($h['body'], true) ?: [];
 ok($h['code'] === 200 && ($hb['application'] ?? '') === 'sales_crm' && ($hb['storage'] ?? '') === 'ok', '/api/v1/health answers, with storage ok (the scratch storage directory)');
 ok(req('GET', '/api/v1/health.php')['code'] === 200, '/api/v1/health.php answers too');
-ok(req('GET', '/api/v1/calendar.ics?token=x')['code'] === 404 && req('POST', '/api/v1/leads')['code'] === 404 && req('GET', '/api/v1/deals/1')['code'] === 404, 'the ICS feed and the records API are rewritten to files slices 4 and 8 build: 404 until then');
+ok(req('GET', '/api/v1/calendar.ics?token=x')['code'] === 404 && req('POST', '/api/v1/leads')['code'] === 404 && req('GET', '/api/v1/deals/1')['code'] === 404, 'the ICS feed (a token that is not one) and the records API (slice 8): 404');
 ok(req('GET', '/api/v1/other')['code'] === 404 && req('GET', '/api/')['code'] === 404, 'anything else under /api is 404');
 ok(req('POST', '/channels/malumail/mail')['code'] === 404, 'the mailbox webhook is rewritten to the file slice 5 builds: 404 until then');
 $p = req('GET', '/pick/?source=x');

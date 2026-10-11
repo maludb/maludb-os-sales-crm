@@ -11,7 +11,7 @@
         <div class="col-lg-7"><?= view('settings/partials/prefs.php', ['prefs' => $prefs, 'defaults' => $defaults, 'refusal' => $refusal, 'osChannels' => $osChannels]) ?></div>
         <div class="col-lg-5">
             <?php if ($may['signature']): ?><?= view('settings/partials/signature.php', ['signature' => $signature]) ?><?php endif; ?>
-            <?php if ($may['feed']): ?><?= view('settings/partials/feed.php', ['feed' => $feed, 'tz' => $tz]) ?><?php endif; ?>
+            <?php if ($may['feed']): ?><?= view('settings/partials/feed.php', ['feed' => $feed, 'tz' => $tz, 'feed_url' => $feed_url ?? null]) ?><?php endif; ?>
             <div class="card mb-3" id="settings-timezone"><div class="card-header"><h5 class="card-title mb-0">Your time zone</h5></div><div class="card-body">
                 <div class="fw-semibold" id="settings-timezone-value"><?= e($tz) ?></div>
                 <div class="fs-12 text-muted">Times, reminders and the calendar are shown in it. It comes from your profile in the operating system: <a href="<?= e($osProfile) ?>" id="settings-timezone-link">change it there</a> and it follows within a minute.</div>

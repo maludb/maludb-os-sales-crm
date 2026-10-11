@@ -15,7 +15,8 @@ declare(strict_types=1);
  * the picker reads mcp_campaigns), list (static lists of a `record_kind` — the import's target), import_template (of a `kind`, the caller's or shared).
  * Slice 3: deal (`account` narrows to its deals), pipeline, stage (`pipeline` required — none named, none offered; Won and Lost are their forms'), product
  * (a sibling's catalog over K7 when a super-admin connected one — ids "inventory:<id>" / "gl:<id>"; none connected, no rows: the line is written by name).
- * Later: activity (4); template (5).
+ * Slice 4: activity (`deal` narrows to its activities), member (colleagues — the people, not agents: an activity's participants).
+ * Later: template (5).
  * A short enumeration (a kind, a role, a lifecycle, a size band) stays a <select>.
  */
 require_once __DIR__ . '/features/accounts/queries.php';
@@ -23,6 +24,7 @@ require_once __DIR__ . '/features/contacts/queries.php';
 require_once __DIR__ . '/features/tags/queries.php';
 require_once __DIR__ . '/features/leads/queries.php';
 require_once __DIR__ . '/features/deals/queries.php';
+require_once __DIR__ . '/features/activities/queries.php';
 
 /** A small picker over one view: rows {id, label, detail?} by a name ILIKE, paged — for the short vocabularies (sources, campaigns, lists, templates). */
 function crm_simple_pick(PDO $pdo, string $sql, string $q, int $page, callable $row, array $args = []): array
@@ -119,5 +121,15 @@ return [
         'title' => 'Products', 'noun' => 'product', 'roles' => ['deals.write'], 'params' => [],
         'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => products_for_pick($pdo, $q, $p, $page),
         'label' => static fn (PDO $pdo, int $id): ?string => null,
+    ],
+    'activity' => [
+        'title' => 'Activities', 'noun' => 'activity', 'roles' => ['records.read'], 'params' => ['deal'],
+        'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => activities_for_pick($pdo, $q, $p, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => activity_label($pdo, $id),
+    ],
+    'member' => [
+        'title' => 'Colleagues', 'noun' => 'colleague', 'roles' => ['records.read'], 'params' => [],
+        'search' => static fn (PDO $pdo, string $q, array $p, int $page): array => colleagues_for_pick($pdo, $q, $p, $page),
+        'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, "SELECT display_name FROM mcp_members WHERE member_id = :id AND member_kind = 'human'", ['id' => $id])) === null || $v === false) ? null : (string) $v,
     ],
 ];

@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-10T21:40:34+00:00",
+    "generated_at": "2026-10-11T10:04:52+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -403,8 +403,8 @@
                 "who",
                 "kinds"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "activity-list": {
             "screen": "activity-list",
@@ -423,8 +423,8 @@
                 "lead",
                 "view"
             ],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "activity-view": {
             "screen": "activity-view",
@@ -432,7 +432,7 @@
             "section": "Activities, reminders and THE CALENDAR — THE SECOND EXEMPLAR (slice 4)",
             "when": "one activity: the record it belongs to, participants, the reminder, notes; Done with outcome and the next-step prompt · Snooze · Reschedule · Reassign",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "activity-add": {
@@ -449,7 +449,7 @@
                 "at",
                 "subject"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "activity-edit": {
@@ -458,7 +458,7 @@
             "section": "Activities, reminders and THE CALENDAR — THE SECOND EXEMPLAR (slice 4)",
             "when": "to change an activity's fields",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "log-call": {
@@ -472,7 +472,7 @@
                 "account",
                 "lead"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "log-meeting": {
@@ -481,7 +481,7 @@
             "section": "Activities, reminders and THE CALENDAR — THE SECOND EXEMPLAR (slice 4)",
             "when": "the quick log of a meeting held: who, when, the outcome, notes, the next step (params as log-call)",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "email-compose": {
@@ -1034,7 +1034,7 @@
             "who": "own and calendar.own",
             "agent": false,
             "record_id": "the member",
-            "built": false
+            "built": true
         },
         "notification_read": {
             "action": "notification_read",
@@ -3748,7 +3748,7 @@
             "who": "activities.write and see on the record",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "activity_update": {
             "action": "activity_update",
@@ -3919,7 +3919,7 @@
             "who": "own or activities.any",
             "agent": true,
             "record_id": "the activity",
-            "built": false,
+            "built": true,
             "partial": true
         },
         "activity_complete": {
@@ -3977,7 +3977,7 @@
             "who": "own or assignee or activities.any",
             "agent": true,
             "record_id": "the activity (the next step's id in `next_activity_id`)",
-            "built": false
+            "built": true
         },
         "activity_reopen": {
             "action": "activity_reopen",
@@ -3998,7 +3998,7 @@
             "who": "own or activities.any",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "activity_reschedule": {
             "action": "activity_reschedule",
@@ -4037,7 +4037,7 @@
             "who": "own or assignee or calendar.team",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "activity_snooze": {
             "action": "activity_snooze",
@@ -4064,7 +4064,7 @@
             "who": "own or assignee",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "activity_assign": {
             "action": "activity_assign",
@@ -4091,7 +4091,7 @@
             "who": "own or activities.any",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "activity_participant_add": {
             "action": "activity_participant_add",
@@ -4124,7 +4124,7 @@
             "who": "own or activities.any",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "activity_participant_remove": {
             "action": "activity_participant_remove",
@@ -4157,7 +4157,7 @@
             "who": "own or activities.any",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "email_draft": {
             "action": "email_draft",

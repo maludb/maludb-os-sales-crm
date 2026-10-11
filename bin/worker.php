@@ -13,8 +13,8 @@ declare(strict_types=1);
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
  * PHASE 0: every pass is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10):
- * `reminders`, `recurring_tasks`, `next_step_flags` slice 4's; `mail_poll`, `mail_match` slice 5's; `smart_lists`, `exports` slice 6's;
- * `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`, `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`.
+ * `mail_poll`, `mail_match` slice 5's; `smart_lists`, `exports` slice 6's; `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`,
+ * `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`; since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`.
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
 require_once dirname(__DIR__) . '/app/bootstrap.php';
@@ -76,12 +76,113 @@ exit($report['errors'] === [] ? 0 : 1);
 
 // ---- the passes (stubs until their slice) ------------------------------------------------------------------------------------------
 
-/** SLICE 4 — activities whose remind_at has passed, not done, not snoozed: a notification row, the outbox when prefs say so, reminded_at set. */
-function worker_pass_reminders(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['reminded' => 0, 'stub' => true]; }
-/** SLICE 4 — recurring tasks (RRULE daily/weekly/monthly) expanded one occurrence ahead when the last is done. */
-function worker_pass_recurring_tasks(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['expanded' => 0, 'stub' => true]; }
-/** SLICE 4 — crm_refresh_next_activity() for records whose next activity changed outside the trigger (a reschedule across days, a done at midnight). */
-function worker_pass_next_step_flags(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['refreshed' => 0, 'stub' => true]; }
+/**
+ * Reminders due (activities-calendar.md §4; built in slice 4): crm_reminders_due(now) — not done, not deleted, not reminded, not snoozed into the future —
+ * each in its own transaction: a person's through crm_deliver_reminder (the bell's row, the outbox rows their preferences ask for — email by default,
+ * a text when they turned texts on for reminders — and reminded_at); an agent's as an agent_dispatches row of kind reminder (the dispatches pass sends
+ * the chat turn) with reminded_at set. A snooze clears reminded_at, so the row comes back at its time. Logged once: reminder.deliver with the counts.
+ */
+function worker_pass_reminders(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $st = $pdo->prepare('SELECT r.activity_id, r.member_id, r.at, r.deal_id, m.member_kind, a.created_by, a.lead_id FROM crm_reminders_due(:at, :l) r
+                           JOIN members m ON m.id = r.member_id JOIN activities a ON a.id = r.activity_id');
+    $st->execute(['at' => $now->format(DATE_ATOM), 'l' => $limit]);
+    $people = 0;
+    $agents = 0;
+    $failed = 0;
+    foreach ($st->fetchAll() as $r) {
+        try {
+            $pdo->beginTransaction();
+            if ($r['member_kind'] === 'agent') {
+                $pdo->prepare("INSERT INTO agent_dispatches (record_type, record_id, agent_member_id, kind, via, acting_member_id, deal_id, lead_id, status, detail)
+                               VALUES ('activity', :a, :agent, 'reminder', 'chat', :by, :d, :l, 'sent', :detail)")
+                    ->execute(['a' => $r['activity_id'], 'agent' => $r['member_id'], 'by' => $r['created_by'], 'd' => $r['deal_id'], 'l' => $r['lead_id'], 'detail' => 'due ' . $r['at']]);
+                $pdo->prepare('UPDATE activities SET reminded_at = now(), snoozed_until = NULL WHERE id = :id')->execute(['id' => $r['activity_id']]);
+                $agents++;
+            } else {
+                $pdo->prepare('SELECT crm_deliver_reminder(:id)')->execute(['id' => $r['activity_id']]);
+                $people++;
+            }
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            $failed++;
+            error_log('worker reminder ' . $r['activity_id'] . ': ' . $e->getMessage());
+        }
+    }
+    if ($people + $agents + $failed > 0) {
+        log_activity($pdo, 'reminder.deliver', null, null, ['source' => 'cron', 'actor_member_id' => null, 'after' => ['reminded' => $people, 'dispatched' => $agents, 'failed' => $failed]]);
+    }
+    return ['reminded' => $people, 'dispatched' => $agents, 'failed' => $failed];
+}
+
+/** An RRULE of a recurring task (FREQ=DAILY|WEEKLY|MONTHLY[;INTERVAL=n]) as a step for DateTimeImmutable::modify, or null when it is not one. */
+function worker_recurrence_step(string $rule): ?string
+{
+    if (!preg_match('/^FREQ=(DAILY|WEEKLY|MONTHLY)(?:;INTERVAL=([1-9][0-9]?))?$/', $rule, $m)) {
+        return null;
+    }
+    return '+' . (int) ($m[2] ?? 1) . ' ' . ['DAILY' => 'day', 'WEEKLY' => 'week', 'MONTHLY' => 'month'][$m[1]];
+}
+
+/**
+ * Recurring tasks expanded one occurrence ahead (built in slice 4): a done task with a repeat and no next occurrence gets one — its due time stepped by
+ * the rule past now (in the task's zone, so 09:00 stays 09:00), the same record, owner, reminder, priority and rule, `recurrence_parent_id` the done one.
+ * Logged task.recur per occurrence.
+ */
+function worker_pass_recurring_tasks(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $st = $pdo->prepare("SELECT a.id, a.subject, a.body, a.account_id, a.contact_id, a.deal_id, a.lead_id, a.owner_member_id, a.created_by, a.due_at, a.all_day, a.timezone,
+                                a.remind_minutes_before, a.priority, a.recurrence, COALESCE(a.timezone, m.timezone, crm_setting_text('timezone')) AS tz
+                           FROM activities a LEFT JOIN members m ON m.id = a.owner_member_id
+                          WHERE a.kind = 'task' AND a.recurrence IS NOT NULL AND a.done_at IS NOT NULL AND a.deleted_at IS NULL AND a.due_at IS NOT NULL
+                            AND NOT EXISTS (SELECT 1 FROM activities c WHERE c.recurrence_parent_id = a.id)
+                          ORDER BY a.done_at LIMIT :l");
+    $st->execute(['l' => $limit]);
+    $made = 0;
+    foreach ($st->fetchAll() as $a) {
+        $step = worker_recurrence_step((string) $a['recurrence']);
+        if ($step === null) { continue; }
+        try { $zone = new DateTimeZone((string) $a['tz']); } catch (Exception) { $zone = new DateTimeZone('UTC'); }
+        $due = (new DateTimeImmutable($a['due_at']))->setTimezone($zone)->modify($step);
+        for ($i = 0; $due <= $now && $i < 1000; $i++) { $due = $due->modify($step); }
+        $pdo->beginTransaction();
+        $ins = $pdo->prepare("INSERT INTO activities (kind, subject, body, account_id, contact_id, deal_id, lead_id, owner_member_id, created_by, due_at, all_day, timezone,
+                                                      remind_minutes_before, priority, recurrence, recurrence_parent_id, source)
+                              VALUES ('task', :s, :b, :acc, :c, :d, :l, :o, :by, :due, :ad, :tz, :r, :p, :rule, :parent, 'cron') RETURNING id");
+        $ins->execute(['s' => $a['subject'], 'b' => $a['body'], 'acc' => $a['account_id'], 'c' => $a['contact_id'], 'd' => $a['deal_id'], 'l' => $a['lead_id'], 'o' => $a['owner_member_id'],
+            'by' => $a['created_by'], 'due' => $due->format(DATE_ATOM), 'ad' => $a['all_day'] ? 'true' : 'false', 'tz' => $a['timezone'], 'r' => $a['remind_minutes_before'], 'p' => $a['priority'],
+            'rule' => $a['recurrence'], 'parent' => $a['id']]);
+        $nid = (int) $ins->fetchColumn();
+        if ($a['remind_minutes_before'] === null) { $pdo->prepare('UPDATE activities SET remind_minutes_before = NULL WHERE id = :id')->execute(['id' => $nid]); }
+        log_activity($pdo, 'task.recur', 'activity', $nid, ['source' => 'cron', 'actor_member_id' => null, 'deal_id' => $a['deal_id'], 'contact_id' => $a['contact_id'], 'account_id' => $a['account_id'],
+            'lead_id' => $a['lead_id'], 'after' => ['from_activity_id' => (int) $a['id'], 'due_at' => $due->setTimezone(new DateTimeZone('UTC'))->format(DATE_ATOM), 'rule' => $a['recurrence']]]);
+        $pdo->commit();
+        $made++;
+    }
+    return ['expanded' => $made];
+}
+
+/**
+ * The next step mended (built in slice 4): the trigger keeps every record's next activity as activities are written; this finds the records whose stored
+ * next step disagrees with their open activities (a tombstone restored, a row changed by hand, an interrupted write) and runs crm_refresh_next_activity
+ * on them. The colours themselves are computed when read (crm_next_colour), so "today" turning into "overdue" at midnight needs nothing here.
+ */
+function worker_pass_next_step_flags(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    $n = 0;
+    $open = static fn (string $col): string => "(SELECT min(COALESCE(a.starts_at, a.due_at)) FROM activities a WHERE a.$col = t.id AND a.done_at IS NULL AND a.deleted_at IS NULL)";
+    foreach (['deal' => ["deals t WHERE t.status = 'open' AND", 'deal_id'], 'contact' => ['contacts t WHERE', 'contact_id'], 'account' => ['accounts t WHERE', 'account_id'], 'lead' => ['leads t WHERE', 'lead_id']] as $kind => [$from, $col]) {
+        $ids = $pdo->query("SELECT t.id FROM $from t.deleted_at IS NULL AND t.next_activity_at IS DISTINCT FROM {$open($col)} LIMIT " . max(1, $limit))->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($ids as $id) {
+            $args = ['account' => null, 'contact' => null, 'deal' => null, 'lead' => null];
+            $args[$kind] = (int) $id;
+            $pdo->prepare('SELECT crm_refresh_next_activity(:account, :contact, :deal, :lead)')->execute($args);
+            $n++;
+        }
+    }
+    return ['refreshed' => $n];
+}
 /** SLICE 5 — the logging mailbox polled for unread mail the webhook missed (once a minute); every message an inbound_email row. */
 function worker_pass_mail_poll(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['received' => 0, 'stub' => true]; }
 /** SLICE 5 — the matcher: inbound_email rows received → contacts by address, a deal by thread, activities of kind email; strangers → proposed leads; bounces and auto-replies marked. */

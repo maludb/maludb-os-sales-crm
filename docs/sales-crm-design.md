@@ -685,6 +685,14 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-11 — SLICE 4 ACTIVITIES, REMINDERS AND THE CALENDAR (THE SECOND EXEMPLAR) BUILT AND PROVEN.** 7 screens and 10 actions; the calendar in four
+views from one query (month, week, day, agenda — the phone's default) for me, a colleague or a team, the drag that reschedules; the activities list; an
+activity's page; the schedule form; Done with the next-step prompt; the two quick-log forms; the worker's `reminders`, `recurring_tasks` and
+`next_step_flags` passes real; the ICS feed and its rotation. `tests/phase3/slice4/run.sh`: 263 checks under php -S and under Apache; slices 1–3, Phase 2,
+Phase 0 and Phase 1 re-run green. **db/020** fixes `crm_record_delete()` naming an activity's table `activitys`. The record:
+`docs/build-specs/activities-reminders.md` "Built and proven". **THE HANDOFF POINT:** slices 5–9 and Phases 4–5 are Sonnet 5.5's, one worker per slice,
+each verified by the planning model.
+
 **2026-10-10 — SLICE 3 PIPELINES, DEALS AND THE BOARD (THE FIRST EXEMPLAR) BUILT AND PROVEN.** 9 screens and 15 actions; the board with the drag, the
 poll and the no-JS move; the list and the forecast over the same query; the deal page with the stage bar; won, lost, reopen, reassign; product lines and
 people with roles; saved views. `tests/phase3/slice3/run.sh`: 191 checks under php -S and under Apache; slices 1–2, Phase 2, Phase 0 and Phase 1 re-run green.
