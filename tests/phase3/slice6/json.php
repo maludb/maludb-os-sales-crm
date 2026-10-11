@@ -95,7 +95,8 @@ echo "4. The worker's passes\n";
 $w = worker('smart_lists,exports,outbox');
 ok(isset($w['ran']['smart_lists']['counted'], $w['ran']['exports']['built'], $w['ran']['outbox']['sent']) && empty($w['ran']['smart_lists']['stub']) && empty($w['ran']['exports']['stub']) && empty($w['ran']['outbox']['stub']) && ($w['errors'] ?? []) === [], 'smart_lists, exports and outbox are real passes: ' . json_encode($w['ran'] ?? $w));
 $w = worker('dispatches,proposals,tombstones_purge,key_usage_prune');
-ok(count(array_filter($w['ran'] ?? [], static fn ($r) => !empty($r['stub']))) === 2 && empty($w['ran']['dispatches']['stub']) && empty($w['ran']['proposals']['stub']), 'the passes of slice 9 are still stubs (slice 8\'s dispatches and proposals are built)');
+$s9Built = !str_contains((string) file_get_contents(dirname(__DIR__, 3) . '/bin/worker.php'), "'stub' => true");      // slice 9 made the last two passes real
+ok(count(array_filter($w['ran'] ?? [], static fn ($r) => !empty($r['stub']))) === ($s9Built ? 0 : 2) && empty($w['ran']['dispatches']['stub']) && empty($w['ran']['proposals']['stub']), $s9Built ? 'no pass is a stub any more (slice 9 built the last two)' : 'the passes of slice 9 are still stubs (slice 8\'s dispatches and proposals are built)');
 
 echo "5. The registry\n";
 exec('php ' . escapeshellarg(dirname(__DIR__, 3) . '/bin/build_action_registry.php') . ' --check 2>&1', $o, $rc);

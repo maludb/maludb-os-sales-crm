@@ -12,9 +12,9 @@ declare(strict_types=1);
  * With --passes the named passes run whether or not they are due; without it every pass runs. CRM_WORKER_NOW (ISO 8601) replaces the clock
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
- * PHASE 0: every pass was a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10): `tombstones_purge`, `key_usage_prune` are still slice 9's. REAL since slice 2: `imports`,
+ * PHASE 0: every pass was a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10); none is a stub now. REAL since slice 2: `imports`,
  * `search_catch_up`; since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`; since slice 5: `mail_poll`, `mail_match`; since slice 6: `smart_lists`, `exports` and the campaign half of `outbox`; since slice 8: the
- * notification half of `outbox`, `dispatches` and `proposals`.
+ * notification half of `outbox`, `dispatches` and `proposals`; since slice 9: `tombstones_purge` and `key_usage_prune`.
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
 require_once dirname(__DIR__) . '/app/bootstrap.php';
@@ -74,7 +74,7 @@ echo json_encode($report, JSON_UNESCAPED_SLASHES) . "\n";
 $pdo->query("SELECT pg_advisory_unlock(hashtext('sales_crm_worker'))");
 exit($report['errors'] === [] ? 0 : 1);
 
-// ---- the passes (stubs until their slice) ------------------------------------------------------------------------------------------
+// ---- the passes ------------------------------------------------------------------------------------------
 
 /**
  * Reminders due (activities-calendar.md §4; built in slice 4): crm_reminders_due(now) — not done, not deleted, not reminded, not snoozed into the future —
@@ -420,7 +420,26 @@ function worker_pass_proposals(PDO $pdo, int $limit, DateTimeImmutable $now): ar
     require_once dirname(__DIR__) . '/app/features/proposals/write.php';
     return standing_proposals_run($pdo, $limit, $now);
 }
-/** SLICE 9 — tombstoned records older than tombstone_days purged with their children. */
-function worker_pass_tombstones_purge(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['purged' => 0, 'stub' => true]; }
-/** SLICE 9 — crm_prune_key_usage(): minute buckets older than a day, day buckets older than 35 days. */
-function worker_pass_key_usage_prune(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['pruned' => 0, 'stub' => true]; }
+/**
+ * The tombstone purge (slice 9; tombstones/write.php): crm_tombstones_purge_kinds() — the SAME function the admin's records_purge calls — destroys, with their notes, files and tags, the deleted leads, accounts, contacts, deals and activities
+ * that have waited past tombstone_days; $limit of each kind a pass. One `records.purge` is logged when anything went, with the count by kind (never a name). A record still inside its window is never touched.
+ */
+function worker_pass_tombstones_purge(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/tombstones/write.php';
+    $paths = [];
+    $counts = records_purge_by_kind($pdo, null, null, $limit, $paths);
+    $files = purge_attachment_files($pdo, $paths);
+    if (array_sum($counts) > 0) {
+        log_activity($pdo, 'records.purge', 'records', null, ['source' => 'cron', 'actor_member_id' => null, 'after' => ['kind' => 'all', 'purged' => $counts, 'total' => array_sum($counts), 'files' => $files]]);
+    }
+    return ['purged' => array_sum($counts), 'by_kind' => $counts, 'files' => $files];
+}
+/**
+ * Key-usage pruning (slice 9): crm_prune_key_usage() (db/005) — the window the schema defines: a minute bucket older than a day, a day bucket older than 35 days (today's count and the last month's chart stay). Nothing a key's limits need is lost:
+ * the rate rule reads the current minute and the current day only.
+ */
+function worker_pass_key_usage_prune(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    return ['pruned' => (int) $pdo->query('SELECT crm_prune_key_usage()')->fetchColumn()];
+}

@@ -245,7 +245,7 @@ $groups = nav_groups();
             var navId = { 'settings': 'my-settings', 'settings-tokens': 'tokens', 'board': 'pipeline', 'deal-list': 'pipeline', 'forecast': 'pipeline', 'deal-view': 'pipeline', 'deal-add': 'pipeline', 'deal-edit': 'pipeline', 'deal-won': 'pipeline', 'deal-lost': 'pipeline', 'saved-views': 'pipeline',
                           'account-list': 'accounts', 'account-view': 'accounts', 'account-add': 'accounts', 'account-edit': 'accounts', 'contact-list': 'contacts', 'contact-view': 'contacts', 'contact-add': 'contacts', 'contact-edit': 'contacts',
                           'lead-list': 'leads', 'lead-inbox': 'leads', 'lead-view': 'leads', 'lead-add': 'leads', 'lead-edit': 'leads', 'lead-convert': 'leads', 'import-list': 'leads', 'import-new': 'leads', 'import-view': 'leads', 'duplicates': 'leads', 'merge': 'leads',
-                          'activity-list': 'activities', 'activity-view': 'activities', 'activity-add': 'activities', 'activity-edit': 'activities', 'log-call': 'activities', 'log-meeting': 'activities', 'email-unmatched': 'email', 'campaign-list': 'campaigns', 'list-list': 'lists' }[screen] || screen;
+                          'activity-list': 'activities', 'activity-view': 'activities', 'activity-add': 'activities', 'activity-edit': 'activities', 'log-call': 'activities', 'log-meeting': 'activities', 'email-unmatched': 'email', 'campaign-list': 'campaigns', 'list-list': 'lists' }[screen] || (screen.indexOf('admin-') === 0 ? 'admin' : screen);        // every admin-* screen (slices 8 and 9) keeps Admin lit
             document.querySelectorAll('.nxl-navbar .nxl-link, #app-tabbar .app-tab').forEach(function (a) { a.classList.remove('active'); });
             var link = document.querySelector('#nav-' + navId + ' .nxl-link');
             if (link) { link.classList.add('active'); }
@@ -278,6 +278,7 @@ $groups = nav_groups();
     <script src="/assets/js/common-init.min.js"></script>
     <script src="/assets/vendors/sortablejs/Sortable.min.js"></script>   <!-- the board's drag (pipeline-board.md §2); the selects work without it -->
     <script src="/assets/js/board.js"></script>
+    <script src="/assets/js/stage-order.js"></script>   <!-- the admin's stage order drag (slice 9); the Move up / Move down buttons work without it -->
     <script src="/assets/js/calendar.js"></script>   <!-- the calendar's drag and the activity form's kind (activities-calendar.md §1–§2); the links work without it -->
     <script src="/assets/js/record-picker.js"></script>   <!-- the record picker (design-system record-picker.md): after common-init -->
     <script src="/assets/js/tag-editor.js"></script>      <!-- the tag editor's suggestions (slice 1) -->

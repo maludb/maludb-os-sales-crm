@@ -96,7 +96,9 @@ echo "4. The worker's passes\n";
 $w = worker('dispatches,proposals,outbox');
 ok(isset($w['ran']['dispatches']['dispatched'], $w['ran']['proposals']['proposed'], $w['ran']['outbox']['sent']) && empty($w['ran']['dispatches']['stub']) && empty($w['ran']['proposals']['stub']) && empty($w['ran']['outbox']['stub']) && ($w['errors'] ?? []) === [], 'dispatches, proposals and outbox are real passes: ' . json_encode($w['ran'] ?? $w));
 $w = worker('tombstones_purge,key_usage_prune');
-ok(count(array_filter($w['ran'] ?? [], static fn ($r) => !empty($r['stub']))) === 2, 'the passes of slice 9 are still stubs');
+$stubsLeft = count(array_filter($w['ran'] ?? [], static fn ($r) => !empty($r['stub'])));
+$s9Built = !str_contains((string) file_get_contents(dirname(__DIR__, 3) . '/bin/worker.php'), "'stub' => true");
+ok($stubsLeft === ($s9Built ? 0 : 2), $s9Built ? 'the passes of slice 9 are real now (no stub left in the worker)' : 'the passes of slice 9 are still stubs');
 
 echo "5. The doors\n";
 ok(is_file(dirname(__DIR__, 3) . '/html/internal/bridge.php') && bridge('share_accounts_index', ['consumer' => 'gl'])['code'] === 200, 'the bridge answers');

@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-11T16:22:53+00:00",
+    "generated_at": "2026-10-11T18:03:55+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -798,8 +798,8 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the admin home: the areas as cards with a number each; the mailbox's health; the tombstones due",
             "params": [],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "admin-pipelines": {
             "screen": "admin-pipelines",
@@ -807,7 +807,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the pipelines and their stages: order (drag, the enhancement), probability, rotting, required fields, ask-the-Assistant, colour, WIP; archived ones",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-pipeline-add": {
@@ -816,7 +816,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "a pipeline: key, name, currency, rotting days, default",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-pipeline-edit": {
@@ -825,7 +825,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "to change a pipeline, archive or restore it",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-stage-add": {
@@ -834,7 +834,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "a stage: name, probability, kind, rotting days, required fields (deal columns and custom keys), ask the Assistant, colour, WIP",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-stage-edit": {
@@ -843,7 +843,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "to change a stage",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-sources": {
@@ -852,7 +852,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the lead sources and the lost reasons (leads' and deals'): order, active",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-rules": {
@@ -861,7 +861,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the assignment rules in order: match, assign to a member, a department or a round-robin; a test box",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-fields": {
@@ -870,7 +870,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the custom fields per record kind: key, label, type, options, pipelines, required to win",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-tags": {
@@ -879,7 +879,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the tag vocabulary with usage: rename, merge, delete",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-mailbox": {
@@ -888,7 +888,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the logging mailbox: address, provider, webhook health, the last poll, the failures, the pending count; the secret's env key",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-quotas": {
@@ -899,7 +899,7 @@
             "params": [
                 "year"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-settings": {
@@ -908,7 +908,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the business's currency, fiscal year, default pipeline, rotting, weighted method, forecast months, duplicates policy, reminders, tombstones, imports, the API's rates, restricted records, the ICS windows, the email footer",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-tokens": {
@@ -917,7 +917,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "every key and token: whose, label, rates, calls today, last used; lead-capture keys for the website's form; revoke",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-purge": {
@@ -926,7 +926,7 @@
             "section": "Admin: pipelines, vocabularies, rules, fields, the mailbox, quotas, settings, tokens, purge (slice 9)",
             "when": "the tombstones: what waits, when it purges; purge now",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         }
     },
@@ -5746,7 +5746,7 @@
             "who": "pipelines.manage",
             "agent": true,
             "record_id": "the pipeline",
-            "built": false
+            "built": true
         },
         "pipeline_delete": {
             "action": "pipeline_delete",
@@ -5767,7 +5767,7 @@
             "who": "pipelines.manage",
             "agent": true,
             "record_id": "the pipeline",
-            "built": false
+            "built": true
         },
         "stage_save": {
             "action": "stage_save",
@@ -5854,7 +5854,7 @@
             "who": "pipelines.manage",
             "agent": true,
             "record_id": "the stage",
-            "built": false
+            "built": true
         },
         "stage_reorder": {
             "action": "stage_reorder",
@@ -5881,7 +5881,7 @@
             "who": "pipelines.manage",
             "agent": true,
             "record_id": "the pipeline",
-            "built": false
+            "built": true
         },
         "stage_delete": {
             "action": "stage_delete",
@@ -5902,7 +5902,7 @@
             "who": "pipelines.manage",
             "agent": true,
             "record_id": "the stage",
-            "built": false
+            "built": true
         },
         "source_save": {
             "action": "source_save",
@@ -5947,7 +5947,7 @@
             "who": "sources.manage",
             "agent": true,
             "record_id": "the source",
-            "built": false
+            "built": true
         },
         "source_delete": {
             "action": "source_delete",
@@ -5968,7 +5968,7 @@
             "who": "sources.manage",
             "agent": true,
             "record_id": "the source",
-            "built": false
+            "built": true
         },
         "lost_reason_save": {
             "action": "lost_reason_save",
@@ -6013,7 +6013,7 @@
             "who": "sources.manage",
             "agent": true,
             "record_id": "the reason",
-            "built": false
+            "built": true
         },
         "lost_reason_delete": {
             "action": "lost_reason_delete",
@@ -6034,7 +6034,7 @@
             "who": "sources.manage",
             "agent": true,
             "record_id": "the reason",
-            "built": false
+            "built": true
         },
         "assignment_rules_save": {
             "action": "assignment_rules_save",
@@ -6055,7 +6055,7 @@
             "who": "assignment.rules",
             "agent": true,
             "record_id": "the rules",
-            "built": false
+            "built": true
         },
         "custom_field_save": {
             "action": "custom_field_save",
@@ -6130,7 +6130,7 @@
             "who": "fields.manage",
             "agent": true,
             "record_id": "the field",
-            "built": false
+            "built": true
         },
         "tag_save": {
             "action": "tag_save",
@@ -6157,7 +6157,7 @@
             "who": "tags.manage",
             "agent": true,
             "record_id": "the tag",
-            "built": false
+            "built": true
         },
         "tag_merge": {
             "action": "tag_merge",
@@ -6184,7 +6184,7 @@
             "who": "tags.manage",
             "agent": true,
             "record_id": "the surviving tag",
-            "built": false
+            "built": true
         },
         "tag_delete": {
             "action": "tag_delete",
@@ -6205,7 +6205,7 @@
             "who": "tags.manage",
             "agent": true,
             "record_id": "the tag",
-            "built": false
+            "built": true
         },
         "mailbox_save": {
             "action": "mailbox_save",
@@ -6268,7 +6268,7 @@
             "who": "mailbox.manage",
             "agent": false,
             "record_id": "the mailbox",
-            "built": false
+            "built": true
         },
         "quota_set": {
             "action": "quota_set",
@@ -6301,7 +6301,7 @@
             "who": "quotas.manage",
             "agent": true,
             "record_id": "the quota",
-            "built": false
+            "built": true
         },
         "settings_save": {
             "action": "settings_save",
@@ -6466,7 +6466,7 @@
             "who": "settings.manage",
             "agent": true,
             "record_id": "the settings",
-            "built": false
+            "built": true
         },
         "capture_key_mint": {
             "action": "capture_key_mint",
@@ -6499,7 +6499,7 @@
             "who": "tokens.manage",
             "agent": false,
             "record_id": "the key",
-            "built": false
+            "built": true
         },
         "records_purge": {
             "action": "records_purge",
@@ -6526,7 +6526,7 @@
             "who": "records.purge",
             "agent": true,
             "record_id": "the count",
-            "built": false
+            "built": true
         }
     }
 }

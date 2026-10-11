@@ -231,6 +231,9 @@ function screen_controller(string $url): ?string
     if (preg_match('#^/email/\{direction\}/\{id\}$#', $path)) {                  // the routing form (phase1-consistency decision 11): an email by direction → email/view.php
         return is_file(WEB_ROOT . '/email/view.php') ? WEB_ROOT . '/email/view.php' : null;
     }
+    if (preg_match('#^/admin/pipelines/\{id\}/stages/new$#', $path)) {                    // a new stage under its pipeline (slice 9): the vhost's own rewrite → admin/stages/form.php?pipeline=
+        return is_file(WEB_ROOT . '/admin/stages/form.php') ? WEB_ROOT . '/admin/stages/form.php' : null;
+    }
     $path = preg_replace('/\{[a-z_]+\}/', '1', $path);          // /pages/{id} → /pages/1
     if (str_ends_with($path, '/')) {
         return is_file(WEB_ROOT . $path . 'index.php') ? WEB_ROOT . $path . 'index.php' : null;

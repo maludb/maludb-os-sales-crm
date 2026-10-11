@@ -80,12 +80,12 @@ function deal_guard(PDO $pdo, callable $step): mixed
         try {
             return $step();
         } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();                      // before the refusal asks anything: a custom field's label is a query, and an aborted transaction answers none (slice 9 found it, with a custom key required by a stage)
+            }
             $r = deal_stage_refusal($pdo, $e);
             if ($r === null) {
                 throw $e;
-            }
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
             }
             emit_action_status(false, ['errors' => [$r['sentence']], 'fields' => $r['fields'], 'missing' => $r['missing']]);
             if (wants_json()) {

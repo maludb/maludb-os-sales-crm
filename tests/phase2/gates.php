@@ -62,11 +62,15 @@ foreach ($left as $id => [$url, , $slice, $title]) {
     if (!(str_contains($b, 'id="' . $id . '-coming"') && str_contains($b, $title . ' is not built yet') && str_contains($b, $slice . ' builds this screen') && str_contains($b, '<title>' . $title . ' · Sales CRM</title>'))) { $bad[] = $url; }
 }
 ok($bad === [], 'every placeholder still owed: the shell, the header and one card saying which slice builds it' . ($bad ? ' — wrong: ' . implode(', ', $bad) : ''));
-[$stubUrl, , $stubSlice] = array_values($left)[0] ?? ['/admin', '', 'slice 9'];
-$r = page($who['admin'], $stubUrl, $json);
-ok($r['code'] === 501 && (json_decode($r['body'], true)['error']['code'] ?? '') === 'not_built', "a JSON caller on a placeholder ($stubUrl): 501 not_built");
-$r = req('POST', $stubUrl, ['jar' => $who['admin'], 'form' => ['csrf_token' => page_csrf($who['admin'])]]);
-ok($r['code'] === 501 && str_contains($r['body'], 'This is built by ' . $stubSlice . '.'), 'a POST to a placeholder: 501, in words');
+if ($left === []) {
+    ok($stubs === 0 && !array_filter($ph, static fn (array $p): bool => $isStub($p[1])), 'slice 9 built the last: no controller calls render_nav_stub any more and all eleven menu screens answer themselves (PHASE 3 COMPLETE)');
+} else {
+    [$stubUrl, , $stubSlice] = array_values($left)[0];
+    $r = page($who['admin'], $stubUrl, $json);
+    ok($r['code'] === 501 && (json_decode($r['body'], true)['error']['code'] ?? '') === 'not_built', "a JSON caller on a placeholder ($stubUrl): 501 not_built");
+    $r = req('POST', $stubUrl, ['jar' => $who['admin'], 'form' => ['csrf_token' => page_csrf($who['admin'])]]);
+    ok($r['code'] === 501 && str_contains($r['body'], 'This is built by ' . $stubSlice . '.'), 'a POST to a placeholder: 501, in words');
+}
 if ($isStub('/settings/tokens/key-mint.php')) {
     $r = req('POST', '/settings/tokens/key-mint.php', ['jar' => $who['rep'], 'headers' => ['Accept: application/json'], 'form' => ['csrf_token' => page_csrf($who['rep']), 'label' => 'x']]);
     ok($r['code'] === 501 && str_contains((string) (json_decode($r['body'], true)['error']['message'] ?? ''), 'slice 8'), 'key_mint answers 501 naming slice 8 until it is built');

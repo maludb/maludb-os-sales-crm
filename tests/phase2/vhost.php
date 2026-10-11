@@ -33,7 +33,8 @@ ok($dealsBuilt ? page($j, '/deals/new')['code'] === 200 && page($j, '/deals/9999
 ok(page($j, '/accounts/999999')['code'] === 404 && page($j, '/leads/1/convert')['code'] === 404 && page($j, '/import/1/status')['code'] === 404, 'a record that is not there and a page of a record whose slice has not shipped: 404');
 ok(page($j, '/email/in/1')['code'] === 404 && page($j, '/email/out/1')['code'] === 404 && page($j, '/email/sideways/1')['code'] === 404, '/email/{in|out}/{id} is rewritten to email/view.php (built by slice 5: an email that is not there is a 404)');
 ok(req('GET', '/u/' . str_repeat('a', 32))['code'] === 404 && req('GET', '/u/short')['code'] === 404, '/u/{token} is rewritten to u/index.php (built by slice 5: a token no send has is a 404); a malformed token 404');
-ok(page($j, '/attachments/1')['code'] === 404 && page($j, '/admin/pipelines/1/stages/new')['code'] === 404, '/attachments/{id} and /admin/pipelines/{id}/stages/new reach their files: 404 until slices 1 and 9');
+$s9 = is_file(dirname(__DIR__, 2) . '/html/admin/stages/form.php');                // slice 9 builds the stage form
+ok(page($j, '/attachments/1')['code'] === 404 && page($j, '/admin/pipelines/1/stages/new')['code'] === ($s9 ? 200 : 404), '/attachments/{id} (a missing attachment: 404) and /admin/pipelines/{id}/stages/new reach their files' . ($s9 ? ' (built by slice 9: the stage form of pipeline 1)' : ': 404 until slice 9'));
 $s4 = is_file(dirname(__DIR__, 2) . '/html/log/call.php');                          // slice 4 builds them: 404 before, the screen after
 ok(page($j, '/log/call')['code'] === ($s4 ? 200 : 404) && page($j, '/calendar/grid')['code'] === ($s4 ? 200 : 404) && ($s4 ? page($j, '/activities/999999/complete')['code'] === 404 : true),
    '/log/call and /calendar/grid' . ($s4 ? ' reach their files (built); a missing activity\'s page is 404' : ': 404 until slice 4'));

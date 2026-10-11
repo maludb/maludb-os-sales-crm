@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * Action `key_revoke` (log `key.revoke`; confirm): stops a key at once. The owner's own key, or any key for a holder of tokens.manage (a lead-capture key included); a key the caller may not see
- * answers 404 (the view is the wall). People only.
+ * answers 404 (the view is the wall). People only. `return_to` (a local path) says where to land — the admin's keys screen (slice 9) revokes through this same handler.
  */
 require_once dirname(__DIR__, 3) . '/app/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/app/features/keys/write.php';
@@ -24,4 +24,4 @@ crm_guard($pdo, static function () use ($pdo, $k, $id): void {
     log_activity($pdo, 'key.revoke', 'mcp_access_token', $id, ['token_id' => $id, 'before' => ['label' => $k['label'], 'member_id' => (int) $k['member_id'], 'lead_capture' => $k['lead_source_id'] !== null]]);
     $pdo->commit();
 });
-crm_done('Revoked the key "' . $k['label'] . '"', $id, crm_land('/settings/tokens/', null, 'key-' . $id), 'tokenChanged');
+crm_done('Revoked the key "' . $k['label'] . '"', $id, crm_land(return_path('/settings/tokens/'), null, 'key-' . $id), 'tokenChanged');

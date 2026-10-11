@@ -270,3 +270,19 @@ html.app-skin-dark .rpt-chart { --rpt-s2: #d95926; --rpt-s3: #199e70; --rpt-s4: 
 .rpt-swatch-mark { display: inline-block; width: 3px; height: 14px; background: var(--rpt-ink); }
 .report-figure { font-size: 1.75rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .report-card .report-figure { margin: .25rem 0; }
+
+/* Admin forms (slice 9): the Save stays in reach — pinned above the command bar (and the phone's tab bar) while a long form scrolls under it. */
+.admin-save-bar { position: sticky; bottom: 78px; z-index: 5; padding: .5rem; margin-left: -.5rem; margin-right: -.5rem; background: var(--bs-body-bg, #fff); border-top: 1px solid rgba(0,0,0,.08); border-radius: .5rem; }
+@media (max-width: 991.98px) { .admin-save-bar { bottom: 124px; } }
+html.app-skin-dark .admin-save-bar { background: #1b2431; border-top-color: rgba(255,255,255,.1); }
+/* the stage list (slice 9): the drag handle, the ghost of a row in flight */
+.stage-handle { cursor: grab; min-width: 24px; justify-content: center; touch-action: none; }
+.stage-handle-none { display: inline-block; width: 24px; }
+.stage-row-ghost { opacity: .45; background: var(--bs-light, #eff0f6); }
+/* the quota grid (slice 9): sellers down, months across — the table scrolls inside its card, never the page; the seller's name stays in view */
+.quota-grid { min-width: 980px; }
+.quota-grid .quota-cell { min-width: 74px; }
+.quota-grid .quota-grid-seller { position: sticky; left: 0; z-index: 1; background: var(--bs-body-bg, #fff); min-width: 120px; }
+html.app-skin-dark .quota-grid .quota-grid-seller { background: #1b2431; }
+/* the template gives .main-content overflow:hidden/auto, which makes it the scroller a sticky bar sticks inside — it never scrolls, so the bar never pinned. `clip` keeps the sideways guard without being a scroll container. */
+.nxl-container .nxl-content .main-content:has(.admin-save-bar) { overflow-x: clip; overflow-y: visible; }

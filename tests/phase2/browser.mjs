@@ -204,8 +204,13 @@ console.log(`seeded the book: account ${seed.acme}, Dana ${seed.dana}, the deal 
   await page.screenshot({ path: `${SHOTS}/desktop-search.png` });
   await page.click('#nav-admin .nxl-link');
   await page.waitForURL(BASE + '/admin');
-  await page.waitForSelector('#admin-coming');
-  ok((await page.title()).startsWith('Admin') && (await page.locator('#admin-coming').innerText()).includes('slice 9'), 'HTMX navigation: /admin pushed, the placeholder names slice 9');
+  if (fs.readFileSync(new URL('../../html/admin/index.php', import.meta.url), 'utf8').includes('render_nav_stub(')) {
+    await page.waitForSelector('#admin-coming');
+    ok((await page.title()).startsWith('Admin') && (await page.locator('#admin-coming').innerText()).includes('slice 9'), 'HTMX navigation: /admin pushed, the placeholder names slice 9');
+  } else {
+    await page.waitForSelector('#admin-cards');
+    ok((await page.title()).startsWith('Admin') && await page.locator('#admin-cards').count() === 1, 'HTMX navigation: /admin pushed, the admin home (slice 9 built)');
+  }
   ok(await page.evaluate(() => document.querySelector('#nav-admin .nxl-link').classList.contains('active') && !document.querySelector('#nav-home .nxl-link').classList.contains('active')), 'the sidebar highlights the screen, not Today');
   await page.goBack();
   await page.waitForURL(/\/search\?q=acme/);

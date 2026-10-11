@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 const KEY_PREFIX = 'crm_';
 const KEY_MAX_LIVE = 10;
+const CAPTURE_KEYS_MAX_LIVE = 50;
 
 /** The keys (scope api) of one person, or of everyone (null — the view only shows others' to a holder of tokens.manage). Newest first. */
 function find_keys(PDO $pdo, ?int $member): array

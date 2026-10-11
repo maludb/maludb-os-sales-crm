@@ -59,7 +59,7 @@ return [
         'label' => static fn (PDO $pdo, int $id): ?string => (($v = one_value($pdo, 'SELECT display_name FROM mcp_members WHERE member_id = :id', ['id' => $id])) === null || $v === false) ? null : (string) $v,
     ],
     'tag' => [
-        'title' => 'Tags', 'noun' => 'tag', 'roles' => ['tags.apply'], 'params' => [],
+        'title' => 'Tags', 'noun' => 'tag', 'roles' => ['tags.apply', 'tags.manage'], 'params' => [],
         'search' => static function (PDO $pdo, string $q, array $p, int $page): array {
             $size = 20;
             $rows = find_tags($pdo, $q, $size, (max(1, $page) - 1) * $size);
