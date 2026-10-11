@@ -29,7 +29,7 @@ $tz = member_timezone();
 render_screen(ACTIVITY_KINDS[$a['kind']] . ': ' . $a['subject'], view('activities/view.php', ['a' => $a, 'participants' => $participants, 'may' => $may, 'tz' => $tz, 'me' => (int) current_member_id(),
     'notes' => find_notes($pdo, 'activity', $id), 'custom' => custom_values_display($pdo, 'activity', json_decode((string) $a['custom_values'], true) ?: []), 'next' => $next,
     'snooze_tomorrow' => format_ts((new DateTimeImmutable('tomorrow 09:00', new DateTimeZone($tz)))->format(DATE_ATOM), $tz, 'D g:i A'),
-    'notice' => crm_notice($_GET['notice'] ?? null, ['created' => ['success', 'Scheduled.'], 'logged' => ['success', 'Logged.'], 'logged_next' => ['success', 'Logged — and the next step is scheduled:'],
+    'notice' => crm_notice($_GET['notice'] ?? null, ['created' => ['success', 'Scheduled.'], 'invited' => ['success', 'Sent the invitation.'], 'invited_partial' => ['warning', 'Sent to some of them; the rest did not go — send it again to reach them.'], 'logged' => ['success', 'Logged.'], 'logged_next' => ['success', 'Logged — and the next step is scheduled:'],
         'updated' => ['success', 'Saved.'], 'done' => ['success', 'Done.'], 'done_next' => ['success', 'Done — and the next step is scheduled:'], 'reopened' => ['success', 'Reopened.'],
         'snoozed' => ['success', 'Snoozed: the reminder comes back then.'], 'rescheduled' => ['success', 'Moved.'], 'assigned' => ['success', 'Reassigned.'],
         'participant_added' => ['success', 'Added them.'], 'participant_removed' => ['success', 'Took them off.'], 'note_added' => ['success', 'Added the note.'],

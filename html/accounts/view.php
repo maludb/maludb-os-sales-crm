@@ -40,7 +40,7 @@ $data = [
     'max_mb' => (int) round(attachment_max_bytes($pdo) / 1048576),
     'may' => ['edit' => $editable, 'tag' => $editable && has_right('tags.apply'), 'restrict' => has_right('records.restrict'), 'delete' => $editable, 'note' => has_right('records.read'),
               'manager' => is_manager(), 'contact' => has_right('contacts.write'), 'deal' => has_right('deals.write'), 'log' => has_right('activities.write'), 'email' => has_right('email.send')],
-    'notice' => crm_notice($_GET['notice'] ?? null, ['created' => ['success', 'Added the account.'], 'updated' => ['success', 'Saved.'], 'restricted' => ['warning', 'Restricted: only the owner, the team named and the managers see it now.'],
+    'notice' => crm_notice($_GET['notice'] ?? null, ['created' => ['success', 'Added the account.'], 'email_sent' => ['success', 'Sent.'], 'email_partial' => ['warning', 'Sent to some of them; the rest did not go — open the draft to send it again.'], 'email_logged' => ['success', 'Logged the email.'], 'updated' => ['success', 'Saved.'], 'restricted' => ['warning', 'Restricted: only the owner, the team named and the managers see it now.'],
         'unrestricted' => ['success', 'Everyone here sees it again.'], 'restored' => ['success', 'Restored.'], 'note_added' => ['success', 'Added the note.'], 'attached' => ['success', 'Attached the file.'],
         'primary' => ['success', 'Changed the primary contact.'], 'note_deleted' => ['success', 'Deleted the note.'], 'detached' => ['success', 'Deleted the file.']]),
 ];

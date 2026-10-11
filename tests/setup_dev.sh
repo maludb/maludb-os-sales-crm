@@ -53,6 +53,7 @@ OS_APPLICATION_TOKEN=osapp_dev_$(openssl rand -hex 12)
 MALUDB_API_URL=http://127.0.0.1:8803
 MALUDB_API_TOKEN=dev-maludb-$(openssl rand -hex 8)
 MALUMAIL_API_URL=http://127.0.0.1:8806
+MALUMAIL_MCP_URL=http://127.0.0.1:8806/mcp
 MALUMAIL_API_KEY=dev-malumail-$(openssl rand -hex 8)
 MAIL_FROM=crm@example.invalid
 MAIL_FROM_NAME="Sales CRM"

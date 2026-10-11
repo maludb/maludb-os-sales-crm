@@ -155,9 +155,10 @@ function record_emails(PDO $pdo, string $kind, int $id, int $limit = 50): array
         'deal' => 'e.deal_id = :id',
         default => ':id = ANY (e.matched_contact_ids)',
     };
-    $st = $pdo->prepare("SELECT e.direction, e.email_id, e.at, e.from_name, e.from_address, e.subject, e.deal_id, e.is_private, e.status FROM mcp_emails e
-                          WHERE e.match_status = 'matched' AND $cond ORDER BY e.at DESC LIMIT :l");
+    $st = $pdo->prepare("SELECT e.direction, e.email_id, e.at, e.from_name, e.from_address, e.subject, e.deal_id, e.is_private, e.status, e.sender_member_id FROM mcp_emails e
+                          WHERE e.match_status = 'matched' AND $cond AND (e.direction = 'in' OR e.status = 'sent' OR e.sender_member_id = :me) ORDER BY e.at DESC LIMIT :l");   // a draft (or a send that did not go) is its sender's alone
     $st->bindValue('id', $id, PDO::PARAM_INT);
+    $st->bindValue('me', (int) current_member_id(), PDO::PARAM_INT);
     $st->bindValue('l', $limit, PDO::PARAM_INT);
     $st->execute();
     return $st->fetchAll();

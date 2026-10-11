@@ -32,7 +32,7 @@ $data = [
     'max_mb' => (int) round(attachment_max_bytes($pdo) / 1048576),
     'may' => ['edit' => $editable, 'tag' => $editable && has_right('tags.apply'), 'restrict' => has_right('records.restrict'), 'note' => has_right('records.read'), 'manager' => is_manager(),
               'log' => has_right('activities.write'), 'email' => has_right('email.send')],
-    'notice' => crm_notice($_GET['notice'] ?? null, ['created' => ['success', 'Added the contact.'], 'updated' => ['success', 'Saved.'], 'opt_out' => ['warning', 'Recorded: Sales CRM will not contact them that way.'],
+    'notice' => crm_notice($_GET['notice'] ?? null, ['created' => ['success', 'Added the contact.'], 'email_sent' => ['success', 'Sent.'], 'email_partial' => ['warning', 'Sent to some of them; the rest did not go — open the draft to send it again.'], 'email_logged' => ['success', 'Logged the email.'], 'updated' => ['success', 'Saved.'], 'opt_out' => ['warning', 'Recorded: Sales CRM will not contact them that way.'],
         'opt_in' => ['success', 'They may be contacted that way again.'], 'restricted' => ['warning', 'Restricted: only the owner, the team named and the managers see it now.'],
         'unrestricted' => ['success', 'Everyone here sees it again.'], 'restored' => ['success', 'Restored.'], 'note_added' => ['success', 'Added the note.'], 'attached' => ['success', 'Attached the file.'],
         'note_deleted' => ['success', 'Deleted the note.'], 'detached' => ['success', 'Deleted the file.']]),

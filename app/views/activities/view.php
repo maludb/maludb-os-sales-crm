@@ -63,6 +63,18 @@ $back = '/activities/' . $id; ?>
                 <button type="submit" class="btn btn-sm btn-light btn-touch" id="activity-reschedule-btn">Reschedule</button></form>
             <?php endif; ?>
         </div></div>
+        <?php $invitees = []; foreach ($participants as $p) { if ($p['contact_id'] !== null) { $invitees[(int) $p['contact_id']] = (string) $p['name']; } }
+              if ($a['contact_id'] !== null) { $invitees[(int) $a['contact_id']] = (string) ($a['contact_name'] ?? 'the contact'); }
+              if ($a['kind'] === 'meeting' && $open && $a['starts_at'] !== null && $may['edit'] && $invitees !== []): ?>
+        <div class="card mb-3" id="activity-invite"><div class="card-body">
+            <div class="fs-11 text-muted">Invitation</div>
+            <div class="fs-12 mb-2" id="activity-invite-to">Email the meeting's calendar invitation to <?= e(implode(', ', $invitees)) ?>.</div>
+            <form method="post" action="/email/invite.php" hx-post="/email/invite.php" hx-target="#flash" class="d-flex flex-wrap gap-2 align-items-end" id="activity-invite-form"><?= csrf_field() ?><input type="hidden" name="activity" value="<?= $id ?>">
+                <div class="flex-grow-1" style="min-width: 12rem"><label class="form-label fs-11 mb-0" for="activity-invite-message">A line above it <span class="text-muted">(optional)</span></label>
+                    <input type="text" class="form-control form-control-sm btn-touch" name="message" id="activity-invite-message" maxlength="2000" placeholder="Looking forward to it"></div>
+                <button type="submit" class="btn btn-sm btn-light btn-touch" id="activity-invite-btn" hx-confirm="Email the invitation now?"><i class="feather-send me-1"></i>Send the invitation</button></form>
+        </div></div>
+        <?php endif; ?>
         <?php if (!$open): ?><div class="card mb-3" id="activity-outcome"><div class="card-body"><div class="fs-11 text-muted">Outcome</div>
             <div class="fw-semibold" id="activity-view-outcome"><?= e(OUTCOME_WORDS[$a['outcome']] ?? (string) $a['outcome']) ?></div>
             <?php if ($a['outcome_note']): ?><div class="fs-12 mt-1" id="activity-view-outcome-note"><?= nl2br(e($a['outcome_note'])) ?></div><?php endif; ?></div></div><?php endif; ?>

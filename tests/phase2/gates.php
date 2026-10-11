@@ -106,9 +106,9 @@ $tabs = static fn (string $j): array => (preg_match_all('/id="tab-(home|pipeline
 ok($tabs($who['rep']) === ['home', 'pipeline', 'calendar', 'log', 'more'], 'the phone\'s tab bar is Today · Pipeline · Calendar · Log · More for a Rep: ' . implode(', ', $tabs($who['rep'])));
 ok($tabs($who['viewer']) === ['home', 'pipeline', 'calendar', 'more'], 'a Viewer has no Log tab (nothing to log): ' . implode(', ', $tabs($who['viewer'])));
 $h = page($who['rep'], '/')['body'];
-$logBuilt = is_file(dirname(__DIR__, 2) . '/html/log/call.php');                    // slice 4 built the quick logs: Log a call is a link, Log an email still greyed (slice 5)
+$logBuilt = is_file(dirname(__DIR__, 2) . '/html/log/call.php');                    // slice 4 built the quick logs: Log a call is a link; slice 5 built Log an email
 ok(str_contains($h, 'id="tab-log-sheet"') && str_contains($h, 'id="tab-log-log-call"') && str_contains($h, 'Log a call')
-   && ($logBuilt ? str_contains($h, 'href="/log/call"') && str_contains($h, '· slice 5') && !str_contains($h, '· slice 4') : str_contains($h, '· slice 4') && !str_contains($h, 'href="/log/call"')),
+   && ($logBuilt ? str_contains($h, 'href="/log/call"') && (is_file(dirname(__DIR__, 2) . '/html/log/email.php') ? str_contains($h, 'href="/log/email"') : str_contains($h, '· slice 5')) && !str_contains($h, '· slice 4') : str_contains($h, '· slice 4') && !str_contains($h, 'href="/log/call"')),
    'the Log sheet lists the quick-log links, greyed with their slice until built (no link to a 404)' . ($logBuilt ? ' — Log a call, Log a meeting and Schedule built' : ''));
 $r = page(jar(), '/accounts');
 ok($r['code'] === 302 && $r['location'] === LAUNCHER, 'no session: a screen goes to the launcher with ?app=sales_crm');

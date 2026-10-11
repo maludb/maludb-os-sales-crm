@@ -19,7 +19,7 @@ foreach (['leads', 'accounts', 'contacts', 'calendar', 'activities', 'campaigns'
     ok(page($j, "/$d")['code'] === 200 && page($j, "/$d/")['code'] === 200, "/$d and /$d/ both reach $d/index.php (the placeholder)");
 }
 ok(page($j, '/search')['code'] === 200 && page($j, '/activity')['code'] === 200 && page($j, '/notifications')['code'] === 200, '/search, /activity and /notifications resolve to their own files');
-ok(page($j, '/email/unmatched')['code'] === 200, '/email/unmatched reaches email/unmatched.php (the placeholder)');
+ok(page($j, '/email/unmatched')['code'] === 200, '/email/unmatched reaches email/unmatched.php');
 $pid = (int) one("SELECT id FROM pipelines WHERE key = 'new_business'");
 ok(page($j, '/pipeline/new_business/board')['code'] === 200 && page($j, "/pipeline/$pid/board")['code'] === 200, 'the board by the pipeline\'s key and by its id reach pipeline/board.php');
 $s3 = is_file($root3 = dirname(__DIR__, 2) . '/html/pipeline/list.php');            // slice 3 builds them: 404 before, the screen after
@@ -31,8 +31,8 @@ ok($dealsBuilt ? page($j, '/deals/new')['code'] === 200 && page($j, '/deals/9999
               : page($j, '/deals/1')['code'] === 404 && page($j, '/deals/new')['code'] === 404 && page($j, '/deals/1/edit')['code'] === 404 && page($j, '/deals/1/won')['code'] === 404,
    '/deals/{id}, /deals/new, /deals/{id}/edit and /deals/{id}/won are rewritten to view.php, form.php and won.php' . ($dealsBuilt ? ' (built: a missing deal is "Deal not found.")' : ': 404 until slice 3'));
 ok(page($j, '/accounts/999999')['code'] === 404 && page($j, '/leads/1/convert')['code'] === 404 && page($j, '/import/1/status')['code'] === 404, 'a record that is not there and a page of a record whose slice has not shipped: 404');
-ok(page($j, '/email/in/1')['code'] === 404 && page($j, '/email/out/1')['code'] === 404 && page($j, '/email/sideways/1')['code'] === 404, '/email/{in|out}/{id} is rewritten to email/view.php: 404 until slice 5');
-ok(req('GET', '/u/' . str_repeat('a', 32))['code'] === 404 && req('GET', '/u/short')['code'] === 404, '/u/{token} is rewritten to u/index.php: 404 until slice 5; a malformed token 404');
+ok(page($j, '/email/in/1')['code'] === 404 && page($j, '/email/out/1')['code'] === 404 && page($j, '/email/sideways/1')['code'] === 404, '/email/{in|out}/{id} is rewritten to email/view.php (built by slice 5: an email that is not there is a 404)');
+ok(req('GET', '/u/' . str_repeat('a', 32))['code'] === 404 && req('GET', '/u/short')['code'] === 404, '/u/{token} is rewritten to u/index.php (built by slice 5: a token no send has is a 404); a malformed token 404');
 ok(page($j, '/attachments/1')['code'] === 404 && page($j, '/admin/pipelines/1/stages/new')['code'] === 404, '/attachments/{id} and /admin/pipelines/{id}/stages/new reach their files: 404 until slices 1 and 9');
 $s4 = is_file(dirname(__DIR__, 2) . '/html/log/call.php');                          // slice 4 builds them: 404 before, the screen after
 ok(page($j, '/log/call')['code'] === ($s4 ? 200 : 404) && page($j, '/calendar/grid')['code'] === ($s4 ? 200 : 404) && ($s4 ? page($j, '/activities/999999/complete')['code'] === 404 : true),
@@ -44,7 +44,7 @@ ok($h['code'] === 200 && ($hb['application'] ?? '') === 'sales_crm' && ($hb['sto
 ok(req('GET', '/api/v1/health.php')['code'] === 200, '/api/v1/health.php answers too');
 ok(req('GET', '/api/v1/calendar.ics?token=x')['code'] === 404 && req('POST', '/api/v1/leads')['code'] === 404 && req('GET', '/api/v1/deals/1')['code'] === 404, 'the ICS feed (a token that is not one) and the records API (slice 8): 404');
 ok(req('GET', '/api/v1/other')['code'] === 404 && req('GET', '/api/')['code'] === 404, 'anything else under /api is 404');
-ok(req('POST', '/channels/malumail/mail')['code'] === 404, 'the mailbox webhook is rewritten to the file slice 5 builds: 404 until then');
+ok(req('POST', '/channels/malumail/mail')['code'] === 403 && req('GET', '/channels/malumail/mail')['code'] === 405, 'the mailbox webhook is rewritten to the file slice 5 built: a POST without a good signature is 403, a GET 405');
 $p = req('GET', '/pick/?source=x');
 ok($p['code'] === 302 && $p['location'] === LAUNCHER, '/pick/ without a session goes to the launcher');
 if (getenv('CRM_APP') === 'apache') {

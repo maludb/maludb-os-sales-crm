@@ -72,9 +72,9 @@ const smallControls = (page, scope) => page.evaluate((s) => [...document.querySe
   await page.waitForSelector('#tab-log-sheet.show');
   const logBuilt = fs.existsSync(new URL('../../html/log/call.php', import.meta.url));      // slice 4 built the quick logs: a link, no slice named
   ok(await shown(page, '#tab-log-sheet') && (await page.locator('#tab-log-sheet .dropdown-item').count()) === 5
-     && (logBuilt ? (await page.locator('a#tab-log-log-call').count()) === 1 && !/slice/.test(await page.locator('#tab-log-log-call').innerText()) && /slice 5/.test(await page.locator('#tab-log-log-email').innerText())
+     && (logBuilt ? (await page.locator('a#tab-log-log-call').count()) === 1 && !/slice/.test(await page.locator('#tab-log-log-call').innerText()) && (fs.existsSync(new URL('../../html/log/email.php', import.meta.url)) ? (await page.locator('a#tab-log-log-email').count()) === 1 : /slice 5/.test(await page.locator('#tab-log-log-email').innerText()))
                   : /slice 4/.test(await page.locator('#tab-log-log-call').innerText())),
-     'Log opens its sheet above the bar: five quick-log entries, ' + (logBuilt ? 'Log a call a link now (slice 4 built), Log an email greyed with slice 5' : 'greyed with their slice until built'));
+     'Log opens its sheet above the bar: five quick-log entries, ' + (logBuilt ? 'Log a call a link now (slice 4 built), Log an email a link too (slice 5 built)' : 'greyed with their slice until built'));
   ok((await page.locator('.modal.show').count()) === 0, 'the sheet is a dropup, not a modal');
   const sheet = await page.locator('#tab-log-sheet').boundingBox();
   ok(sheet.y + sheet.height <= box.y + 1 && sheet.x >= 0 && sheet.x + sheet.width <= 375, 'the sheet sits above the tab bar, inside the screen');

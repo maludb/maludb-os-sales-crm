@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-11T10:04:52+00:00",
+    "generated_at": "2026-10-11T12:26:43+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -497,7 +497,7 @@
                 "activity",
                 "draft"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "email-view": {
@@ -506,7 +506,7 @@
             "section": "Email (slice 5)",
             "when": "one email: headers, the body (when I may read it), the contacts matched, the deal, attachments; Mark private · Attach to contact · Make lead",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "email-unmatched": {
@@ -515,8 +515,8 @@
             "section": "Email (slice 5)",
             "when": "emails matched to no one, and proposed leads from strangers: Make lead · Attach to contact · Ignore",
             "params": [],
-            "built": false,
-            "stub": true
+            "built": true,
+            "stub": false
         },
         "log-email": {
             "screen": "log-email",
@@ -527,7 +527,7 @@
                 "contact",
                 "deal"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "template-list": {
@@ -536,7 +536,7 @@
             "section": "Email (slice 5)",
             "when": "the templates — shared and mine — with their kind and uses; New",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "template-add": {
@@ -545,7 +545,7 @@
             "section": "Email (slice 5)",
             "when": "a template: name, kind, subject and body with the merge fields listed, shared or mine",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "template-edit": {
@@ -554,7 +554,7 @@
             "section": "Email (slice 5)",
             "when": "to change a template",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "campaign-list": {
@@ -4220,7 +4220,7 @@
             "who": "email.send or email.log",
             "agent": true,
             "record_id": "the draft",
-            "built": false
+            "built": true
         },
         "email_send": {
             "action": "email_send",
@@ -4247,7 +4247,7 @@
             "who": "email.send and see on the contact",
             "agent": true,
             "record_id": "the outbound email",
-            "built": false
+            "built": true
         },
         "email_log": {
             "action": "email_log",
@@ -4298,7 +4298,7 @@
             "who": "email.log and see on the contact",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "email_private_set": {
             "action": "email_private_set",
@@ -4331,7 +4331,7 @@
             "who": "own (the sender) or deals.any",
             "agent": true,
             "record_id": "the email",
-            "built": false
+            "built": true
         },
         "email_attach_contact": {
             "action": "email_attach_contact",
@@ -4358,7 +4358,7 @@
             "who": "contacts.write",
             "agent": true,
             "record_id": "the email",
-            "built": false
+            "built": true
         },
         "email_make_lead": {
             "action": "email_make_lead",
@@ -4379,7 +4379,7 @@
             "who": "leads.write",
             "agent": true,
             "record_id": "the lead",
-            "built": false
+            "built": true
         },
         "email_ignore": {
             "action": "email_ignore",
@@ -4400,7 +4400,7 @@
             "who": "leads.write",
             "agent": true,
             "record_id": "the email",
-            "built": false
+            "built": true
         },
         "meeting_invite_send": {
             "action": "meeting_invite_send",
@@ -4427,7 +4427,7 @@
             "who": "own or activities.any",
             "agent": true,
             "record_id": "the activity",
-            "built": false
+            "built": true
         },
         "template_save": {
             "action": "template_save",
@@ -4478,7 +4478,7 @@
             "who": "own or templates.manage",
             "agent": true,
             "record_id": "the template",
-            "built": false
+            "built": true
         },
         "template_delete": {
             "action": "template_delete",
@@ -4499,7 +4499,7 @@
             "who": "own or templates.manage",
             "agent": true,
             "record_id": "the template",
-            "built": false
+            "built": true
         },
         "campaign_create": {
             "action": "campaign_create",

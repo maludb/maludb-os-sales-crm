@@ -228,6 +228,9 @@ function screen_controller(string $url): ?string
 {
     $path = parse_url($url, PHP_URL_PATH) ?: $url;
     $path = '/' . ltrim($path, '/');
+    if (preg_match('#^/email/\{direction\}/\{id\}$#', $path)) {                  // the routing form (phase1-consistency decision 11): an email by direction → email/view.php
+        return is_file(WEB_ROOT . '/email/view.php') ? WEB_ROOT . '/email/view.php' : null;
+    }
     $path = preg_replace('/\{[a-z_]+\}/', '1', $path);          // /pages/{id} → /pages/1
     if (str_ends_with($path, '/')) {
         return is_file(WEB_ROOT . $path . 'index.php') ? WEB_ROOT . $path . 'index.php' : null;

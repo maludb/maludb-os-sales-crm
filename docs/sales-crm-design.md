@@ -685,6 +685,13 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-11 — SLICE 5 EMAIL BUILT AND PROVEN.** 7 screens and 10 actions; the logging mailbox's signed webhook and the worker's `mail_poll` and `mail_match` real (a message kept raw, matched by the
+database's `crm_match_inbound_email` onto contacts and the deal by thread or tag, a stranger proposed, a bounce ignored, a reply told to its owner); compose with templates and merge fields, drafts (their sender's
+alone), send through MaluMail (Reply-To the mailbox, a Message-ID of ours, the footer and the unsubscribe link, files, the meeting's ICS), the opt-out refused by name, `email_log`, private, the unmatched screen
+(Make lead · Attach · Ignore), the meeting's invitation, templates, the unsubscribe door `/u/{token}` (only the token's SHA-256 kept), and the three mail bodies of slice 8. `tests/phase3/slice5/run.sh`: 397
+checks under php -S and under Apache; slices 1–4, Phase 2, Phase 0 and Phase 1 re-run green. **db/021** adds the reply's and the invitation's columns to `outbound_email`, a unique uid on `inbound_email`, a
+sender-only draft in `mcp_emails`, a matcher that also takes the provider's id, and real line breaks in the seeded templates. The record: `docs/build-specs/email.md` "Built and proven".
+
 **2026-10-11 — SLICE 4 ACTIVITIES, REMINDERS AND THE CALENDAR (THE SECOND EXEMPLAR) BUILT AND PROVEN.** 7 screens and 10 actions; the calendar in four
 views from one query (month, week, day, agenda — the phone's default) for me, a colleague or a team, the drag that reschedules; the activities list; an
 activity's page; the schedule form; Done with the next-step prompt; the two quick-log forms; the worker's `reminders`, `recurring_tasks` and

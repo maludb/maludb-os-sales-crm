@@ -96,10 +96,16 @@ function ics_domain(): string
     return (string) (parse_url(app_url('/'), PHP_URL_HOST) ?: 'sales-crm');
 }
 
-/** One activity as a VEVENT (the feed's, and the invitation slice 5 attaches with METHOD:REQUEST). $f: crm_feed_rows' row + body, record_url, updated_at, timezone. */
+/**
+ * One activity as a VEVENT (the feed's, and the invitation slice 5 attaches with METHOD:REQUEST). $f: crm_feed_rows' row + body, record_url, updated_at, timezone.
+ * An INVITATION (slice 5; email.md) adds `organizer` [name, email], `attendees` [[name, email], …] and `external` => true: a stranger reads it, so the summary is
+ * the subject alone, the description the message and the meeting link — never the CRM's own address of the activity, its record's name or its internal notes —
+ * and the URL line is the meeting link when there is one.
+ */
 function ics_event(array $f, string $tz, string $stamp): string
 {
     $id = (int) $f['activity_id'];
+    $external = !empty($f['external']);
     $out = ics_line('BEGIN:VEVENT') . ics_line('UID:crm-activity-' . $id . '@' . ics_domain()) . ics_line('DTSTAMP:' . $stamp);
     if ($f['all_day']) {
         $start = (new DateTimeImmutable($f['starts_at']))->setTimezone(new DateTimeZone($f['timezone'] ?: $tz));
@@ -107,14 +113,28 @@ function ics_event(array $f, string $tz, string $stamp): string
     } else {
         $out .= ics_line('DTSTART:' . ics_utc((string) $f['starts_at'])) . ics_line('DTEND:' . ics_utc((string) $f['ends_at']));
     }
-    $summary = (ACTIVITY_KINDS[$f['kind']] ?? ucfirst((string) $f['kind'])) . ': ' . $f['subject'] . (($f['record_name'] ?? '') !== '' ? ' — ' . $f['record_name'] : '');
-    $desc = $f['record_url'] . (($f['body'] ?? '') !== '' ? "\n\n" . mb_substr((string) $f['body'], 0, 200) : '');
-    $out .= ics_line('SUMMARY:' . ics_text($summary)) . ics_line('DESCRIPTION:' . ics_text($desc)) . ics_line('URL:' . app_url('/activities/' . $id));
+    if ($external) {
+        $summary = (string) $f['subject'];
+        $desc = trim((string) ($f['body'] ?? '') . (($f['meeting_url'] ?? '') !== '' ? "\n\n" . $f['meeting_url'] : ''));
+        $out .= ics_line('SUMMARY:' . ics_text($summary));
+        if ($desc !== '') { $out .= ics_line('DESCRIPTION:' . ics_text($desc)); }
+        if (($f['meeting_url'] ?? '') !== '') { $out .= ics_line('URL:' . $f['meeting_url']); }
+    } else {
+        $summary = (ACTIVITY_KINDS[$f['kind']] ?? ucfirst((string) $f['kind'])) . ': ' . $f['subject'] . (($f['record_name'] ?? '') !== '' ? ' — ' . $f['record_name'] : '');
+        $desc = $f['record_url'] . (($f['body'] ?? '') !== '' ? "\n\n" . mb_substr((string) $f['body'], 0, 200) : '');
+        $out .= ics_line('SUMMARY:' . ics_text($summary)) . ics_line('DESCRIPTION:' . ics_text($desc)) . ics_line('URL:' . app_url('/activities/' . $id));
+    }
     if (($f['location'] ?? '') !== '') {
         $out .= ics_line('LOCATION:' . ics_text((string) $f['location']));
     }
     if (isset($f['updated_at'])) {
         $out .= ics_line('LAST-MODIFIED:' . ics_utc((string) $f['updated_at']));
+    }
+    if (!empty($f['organizer'])) {
+        $out .= ics_line('ORGANIZER;CN=' . ics_param((string) $f['organizer'][0]) . ':mailto:' . $f['organizer'][1]);
+    }
+    foreach ($f['attendees'] ?? [] as [$name, $email]) {
+        $out .= ics_line('ATTENDEE;CN=' . ics_param((string) $name) . ';ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:' . $email);
     }
     $out .= ics_line('STATUS:' . ($f['done'] ? 'CANCELLED' : 'CONFIRMED'));
     if ($f['remind_minutes_before'] !== null && !$f['done']) {
@@ -122,6 +142,19 @@ function ics_event(array $f, string $tz, string $stamp): string
             . ics_line('TRIGGER:-PT' . (int) $f['remind_minutes_before'] . 'M') . ics_line('END:VALARM');
     }
     return $out . ics_line('END:VEVENT');
+}
+
+/** A parameter value (CN=…): quoted, with the characters a parameter cannot hold taken out. */
+function ics_param(string $v): string
+{
+    return '"' . str_replace(['"', "\r", "\n"], ["'", ' ', ' '], $v) . '"';
+}
+
+/** One meeting as an invitation (an .ics a mail client offers Accept/Decline on): METHOD:REQUEST around ics_event(), the organizer the seller, the attendees the contacts. */
+function ics_invitation(array $f, string $tz): string
+{
+    return ics_line('BEGIN:VCALENDAR') . ics_line('VERSION:2.0') . ics_line('PRODID:-//MaluDB Business OS//Sales CRM//EN') . ics_line('CALSCALE:GREGORIAN') . ics_line('METHOD:REQUEST')
+        . ics_event($f + ['external' => true], $tz, gmdate('Ymd\THis\Z')) . ics_line('END:VCALENDAR');
 }
 
 /** The person's feed as text (CRLF lines): their own activities in the settings' window (crm_feed_rows), the record's URL and the body's start in each. */

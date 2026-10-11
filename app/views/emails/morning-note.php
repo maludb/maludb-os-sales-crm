@@ -1,0 +1,3 @@
+<?php /** The Sales Assistant's morning note's mail body (an outbox row of kind morning_note): the note's title and opening line, then its sections — today, overdue, deals with no next step, rotting deals,
+ * replies — each a list of lines (or [line, link]) in the optional `sections`; with none, the row's body is the note. The notification layout does the rest. Data: format, title, body, url, app; optional sections */
+echo view('emails/notification.php', ['format' => $format, 'title' => $title, 'body' => $body, 'url' => $url, 'app' => $app, 'lead' => 'Your morning note', 'sections' => $sections ?? [], 'cta' => 'Open Sales CRM']);

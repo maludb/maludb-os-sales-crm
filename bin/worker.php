@@ -13,8 +13,8 @@ declare(strict_types=1);
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
  * PHASE 0: every pass is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10):
- * `mail_poll`, `mail_match` slice 5's; `smart_lists`, `exports` slice 6's; `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`,
- * `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`; since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`.
+ * `smart_lists`, `exports` slice 6's; `outbox`, `dispatches`, `proposals` slice 8's; `tombstones_purge`,
+ * `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`; since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`; since slice 5: `mail_poll`, `mail_match`.
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
 require_once dirname(__DIR__) . '/app/bootstrap.php';
@@ -183,10 +183,43 @@ function worker_pass_next_step_flags(PDO $pdo, int $limit, DateTimeImmutable $no
     }
     return ['refreshed' => $n];
 }
-/** SLICE 5 — the logging mailbox polled for unread mail the webhook missed (once a minute); every message an inbound_email row. */
-function worker_pass_mail_poll(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['received' => 0, 'stub' => true]; }
-/** SLICE 5 — the matcher: inbound_email rows received → contacts by address, a deal by thread, activities of kind email; strangers → proposed leads; bounces and auto-replies marked. */
-function worker_pass_mail_match(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['matched' => 0, 'proposed' => 0, 'ignored' => 0, 'stub' => true]; }
+/**
+ * The logging mailbox polled for unread mail the webhook missed (built in slice 5; email.md): each active mailbox with poll_enabled — MaluMail's mailbox MCP lists its unread
+ * messages and every one becomes an inbound_email row (a message the webhook brought already is recognised by its uid and its Message-ID; one that could not be read leaves a
+ * `failed` row and is tried again). last_polled_at and last_error are kept on the mailbox for the admin's health card. Without a MaluMail key it does nothing (and says so).
+ * Never matches — mail_match does.
+ */
+function worker_pass_mail_poll(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/email/inbound.php';
+    $out = ['received' => 0, 'duplicate' => 0, 'failed' => 0, 'mailboxes' => 0, 'errors' => 0];
+    if ((string) env('MALUMAIL_API_KEY', '') === '') {
+        return $out + ['skipped' => 'no MaluMail key'];
+    }
+    $boxes = $pdo->query("SELECT id, address::text AS address, last_uid, webhook_secret_ref FROM mailboxes WHERE active AND poll_enabled AND provider = 'malumail' ORDER BY id")->fetchAll();
+    foreach ($boxes as $mb) {
+        try {
+            $r = mail_poll_mailbox($pdo, $mb, min(50, $limit));
+            foreach (['received', 'duplicate', 'failed'] as $k) { $out[$k] += $r[$k]; }
+            $out['mailboxes']++;
+        } catch (Throwable $e) {
+            $out['errors']++;
+            error_log('worker mail_poll ' . $mb['id'] . ': ' . $e->getMessage());
+            mail_mailbox_error($pdo, (int) $mb['id'], $e->getMessage());
+        }
+    }
+    return $out;
+}
+/**
+ * The matcher (built in slice 5; email.md): the received emails still pending go through crm_match_inbound_email() (db/011) one transaction each — onto the contacts their addresses
+ * name and the deal their thread (or [D-000123]) names as email activities (the files copied onto each), a stranger proposed as a lead, a bounce or an auto-reply ignored — and
+ * a contact's reply told to its owner. Logged mail.matched|proposed|unmatched|ignored per email (the message id and the contact ids, never the body).
+ */
+function worker_pass_mail_match(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/email/matcher.php';
+    return mail_match_pending($pdo, $limit);
+}
 /** SLICE 6 — smart lists' member_count refreshed hourly. */
 function worker_pass_smart_lists(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['counted' => 0, 'stub' => true]; }
 /** crm_search_catch_up(): every record whose index row is older than its change (the triggers index as they write; this mends what they missed). Built in slice 2. */
