@@ -6,6 +6,7 @@ declare(strict_types=1);
  * minute per token (429). Their own activities in the settings' window, one VEVENT each, text/calendar. Every open logged `feed.read` with the member —
  * never the token.
  */
+define('CRM_API_RAW', true);            // the feed answers text/calendar, not JSON
 require_once dirname(__DIR__, 3) . '/app/api/bootstrap.php';
 require_once dirname(__DIR__, 3) . '/app/features/activities/queries.php';
 require_once dirname(__DIR__, 3) . '/app/features/calendar/ics.php';

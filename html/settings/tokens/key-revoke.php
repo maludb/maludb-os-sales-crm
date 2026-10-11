@@ -1,5 +1,27 @@
 <?php
 declare(strict_types=1);
-/** Action `key_revoke` — slice 8's (agents-k7-api.md: keys acting as the person, the rate rule, rotation keeping the old key 24 hours). Until then the shell's stub: 501 to a POST and to JSON, in words. Removing this call is the slice's first step. */
+/**
+ * Action `key_revoke` (log `key.revoke`; confirm): stops a key at once. The owner's own key, or any key for a holder of tokens.manage (a lead-capture key included); a key the caller may not see
+ * answers 404 (the view is the wall). People only.
+ */
 require_once dirname(__DIR__, 3) . '/app/bootstrap.php';
-render_nav_stub('tokens', 'slice 8', 'records.read');
+require_once dirname(__DIR__, 3) . '/app/features/keys/write.php';
+crm_handler_begin();
+require_human();
+$pdo = db();
+$me = (int) current_member_id();
+$id = request_integer('api_key') ?? request_integer('key') ?? request_integer('id');
+$k = $id === null ? null : find_key($pdo, $id);
+if ($k === null || $k['revoked_at'] !== null) {
+    refuse(404, 'Key not found.');
+}
+if ((int) $k['member_id'] !== $me && !has_right('tokens.manage')) {
+    refuse(404, 'Key not found.');
+}
+crm_guard($pdo, static function () use ($pdo, $k, $id): void {
+    $pdo->beginTransaction();
+    key_revoke($pdo, $id);
+    log_activity($pdo, 'key.revoke', 'mcp_access_token', $id, ['token_id' => $id, 'before' => ['label' => $k['label'], 'member_id' => (int) $k['member_id'], 'lead_capture' => $k['lead_source_id'] !== null]]);
+    $pdo->commit();
+});
+crm_done('Revoked the key "' . $k['label'] . '"', $id, crm_land('/settings/tokens/', null, 'key-' . $id), 'tokenChanged');

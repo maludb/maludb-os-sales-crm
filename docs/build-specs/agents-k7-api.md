@@ -85,3 +85,51 @@ never a restricted account, never a body; `k7_read` caches and degrades; the API
 
 ## Open questions
 None.
+
+## Built and proven (2026-10-11)
+**Screens (2) and actions (12), the doors and the worker.** `/proposals` — the Assistant's proposals as cards (the kind's icon and words, the title, the deal or lead as a link only when the viewer's wall lets them open it, the payload said in plain lines in
+their zone: a next step's kind, moment and subject and what to say, a qualification's score, reasons and suggested owner, a duplicate's two sides as links and what matched), Waiting by default with Accepted, Dismissed and Everything and a kind
+filter, a manager's `who` (everyone's or one person's; a Rep's is forced to "me"), Accept (a duplicate's reads "Review the pair" and sends the manager to the duplicates screen) and Dismiss as plain form buttons that HTMX upgrades; `/admin/agents` —
+the agents admitted here with their last dispatch, what waits and what was answered this week, the dispatches table (status in words and tone, the kind in words, the excerpt, who it acted for, Cancel on a waiting one) and the Assistant's
+settings form (the morning note and its hour, proposals on or off, the days a lead or an account may sit, the open stages that ask the Assistant); people only, `agents.settings`. The actions: `proposal_accept` / `proposal_dismiss` (the person it is
+for, or a manager; a next step becomes THE DECIDER'S activity, source `proposal`, linked back; a qualification sets the score and moves a new lead to working; what the kind changes is judged by the walls as the decider), `next_step_propose`,
+`lead_qualify_propose`, `duplicate_propose`, `notification`, `sms_send` (refused `no_sender`), `dispatch_cancel`, `agents_settings_save`, `key_mint`, `key_rotate`, `key_revoke` (the shell's stubs made real; the Tokens screen gained its keys card and
+the one-time value). The records API (`html/api/v1/{leads,accounts,contacts,deals,activities}.php` over `app/api/routes.php`): a Bearer key only — NO cookie is read, NO session is started and none is set (`CRM_API` makes `app/bootstrap.php` skip it),
+one 401 body for every failure, 429 with Retry-After, CORS from `API_CORS_ORIGINS` echoed exactly and never with credentials, `api.call` logged per call with the key's id; the list and the one record are the screens' own JSON, a create and a change the
+`*_save` handlers run as the key's person with the JSON body as their form (so the rights, the walls, the schema's refusals and the log are the browser's); an agent's key is refused a write; a LEAD-CAPTURE key reaches only `POST /api/v1/leads`
+(`api_capture_lead()`: the capped fields, the source the key's, the honeypot `website_url`, `{ok, lead_id}` and nothing else, a `lead_qualify` dispatch for the Assistant) and answers 403 `capture_key` anywhere else. The bridge
+(`html/internal/bridge.php`, loopback + `X-CRM-Bridge`, ops `k7_read`, the five `share_*` and `notify`, any other op 404) and `app/features/shares/queries.php`. `k7_read()` is real (the kernel's `apps/read.php`, cached five minutes per provider, tool and arguments
+in `k7_cache`, degraded to `no_connection` / `unavailable`, `k7.read` logged) and the account page's Tickets tab and ledger panel use `k7_account_read()` (the wall first). The worker: the `outbox` pass sends the `notification_outbox` rows (email
+through MaluMail with `render_mail()`, texts through K6 with `no_sender` and the other refusals skipped with the code in `detail`, three attempts after 1 and 4 minutes), `dispatches` (one chat turn per dispatch, first 200 characters kept, three attempts,
+a refusal final, a running run asked after, a paused run awaiting approval) and `proposals` (a `duplicate` per new pair for the manager of the owner's department, a `rotting` per deal per stage). The registry reads 69 screens and 102 actions built
+(this slice's 2 and 12; THREE paused — `sms_send`, `agents_settings_save`, `key_mint` — the spec's "4 approvals" counted one that is not in the manifest's slice-8 section).
+
+**Proven** by `tests/phase3/slice8/run.sh` on a fresh `crm_dev8`, under php -S and a real Apache (the proof's public name answers 404 under /internal/ and the bridge lives on the internal port) — keys 43, api 60, capture 51, shares 60, k7 31,
+proposals 83, notify 44, outbox 35, agents 45, json 77, browser 62 (591 checks), the schema proof (173) and the log and the registry. Keys: minted once, only the hash stored, limits lowered never raised, ten live at most, rotation's overlap, a capture key
+staying a capture key, revoke by the owner or `tokens.manage`, an agent's `key_mint` paused through the registry and refused, no key or hash in any log row. API: the same 401 for none, unknown, garbage, an MCP token and a session cookie; no Set-Cookie on any
+answer; preflights; 429s; Priya's key does not list Marco's restricted account; the screen's JSON byte for byte; creates and PATCHes as the person with the screen's own refusals; an id in the body names nothing. Capture: the body cannot choose the source,
+owner, status or score; the honeypot; every cap; 413; every other route 403; day limit counting honeypot hits; the dispatch. Shares and bridge: unsigned, wrong, stale, altered and prefix-less signatures all 401, forwarded headers ignored, `bridge_verify()`
+refusing non-loopback, every op off the list 404, a share without a consumer (or one smuggled in the arguments) 403, each document's exact fields, nothing restricted, no body and no note, `share.read` logged. K7: cache, degradation, the wall first, the
+account page's panels. Proposals, notices, texts, the outbox, dispatches and the agents' screen as the Proof lists. Earlier suites re-run green (the slice 6 and Phase 2 proofs that asserted slice 8 unbuilt now follow whether it is built).
+
+**Found and fixed (db/023):** (1) `crm_key_rotate()` copied a key's person, label and limits but NOT `lead_source_id` or the expiry — rotating a lead-capture key made a full key acting as the admin, and a rotated key forgot its own expiry; the
+replacement copies both. (2) `crm_share_accounts_index()` returned the account's own counters, which are kept over every deal, so a shared account carried the number and value of the deals RESTRICTED to someone; counted now from the deals a share may
+show. (3) `crm_share_account_timeline_summary()`'s trailing ORDER BY/LIMIT applied to the whole union: with more open activities than the limit it returned no past touch and the farthest open one as the "next step"; now the last N done touches and the
+nearest open one. (4) The existing API gate accepted a session cookie and started a PHP session (with a file) on every call, and `api_cors` answered a preflight through JSON mode as a 501; the API has no session now and a preflight is a 204.
+
+**Decisions taken here (within the spec):**
+- `k7_read(PDO $pdo, string $provider, string $tool, array $arguments)` keeps its signature and callers; the wall is `k7_account_read($pdo, $provider, $tool, $accountId, $extra)` (the spec's signature in effect), used by the account page and the bridge's `k7_read` op
+  (`read` = `account_tickets` | `account_ledger`; a provider or tool named in the arguments is ignored). A refusal and an answer cache five minutes, a failing provider 30 seconds. Migration db/023 adds `k7_cache` (no migration existed for it).
+- Keys are `crm_` + 48 hex (an MCP token is `mcp_`); a person may lower the settings' limits but only a holder of `tokens.manage` raises them; at most ten live keys per person; a Rep's rotate is their own only, `key_revoke` is the owner's or `tokens.manage`'s
+  (another person's key answers 404). Capture keys are minted in slice 9's admin; the proofs make them in SQL.
+- The API: JSON null clears a field, JSON booleans are 1/0; `POST /api/v1/{kind}/{id}` is 405 (change with PATCH); `PATCH` without an id is 405; `id`, the record's own name and `_partial`/`return_to` in a body are ignored; bodies are capped at 1 MB (32 kB on the
+  capture route). `api.call` is logged for authenticated calls only (the web server's log has the rest).
+- The capture route answers `{ok, lead_id}` as the design says (the id shows volume to anyone holding the website's key; a reference would need a schema change). A filled honeypot answers `{ok: true}` with no `lead_id` and logs `lead.capture_trap`.
+- A dispatch's `cancelled` state is `refused` with the detail "Cancelled by NAME" (the reused table's status check has no `cancelled`; shown in words as Cancelled). `attempts` counts the attempt being made (default 1): three tries, retries after 1 and 4 minutes.
+  The acting person is the row's, else the lead's or deal's owner (a person), else the row is refused. A lead from the capture route wakes the Assistant (the agent whose name says "assistant", db/013's convention) when proposals are on.
+- Who decides a proposal about a record with no owner, and a duplicate: the manager of the owner's department (`departments.manager_member_id`) holding the Sales Manager or admin role, else the first such manager. `next_step_propose` refuses a deal that is closed, has a next step
+  or has a proposal waiting; every `*_propose` refuses while the Assistant's proposals are off; a duplicate pair already proposed in any status, or set aside as not a duplicate, is refused (and the worker never makes it again).
+- The bridge's `notify` is an AGENT's door only (a person uses the action), refused under an evaluation run; the recipient rules are the action's. A morning note is once a day per person (the outbox's dedupe key). A notice's links must be visible to the SENDER.
+- Added beyond the list: the "Proposals" menu item (Me group); `app/features/proposals/write.php` holds the worker's `standing_proposals_run()` and `agents/dispatch.php` its `dispatches_run()`; the Apache vhost answers 404 under `/internal/`;
+  `tests/fake_kernel.php` answers `/api/v1/apps/read.php` (approved, unapproved, failing, busy) and a chat run's state.
+- Not built: a Python server (Phase 4); texting a contact (K28); the capture key's admin screen (slice 9).

@@ -1,4 +1,4 @@
-<?php /** The caller's tokens and the MCP URLs to connect their AI to (screen `tokens`). Data: rows, raw (just minted, once), tz */ $base = rtrim((string) env('APP_URL', ''), '/'); ?>
+<?php /** The caller's tokens, API keys and the MCP URLs to connect their AI to (screen `tokens`). Data: rows, raw (a token just minted, once), keys, others (other people's keys — tokens.manage), rawKey (a key just minted or rotated, once), api_url, limits [per minute, per day], may_raise, tz */ $base = rtrim((string) env('APP_URL', ''), '/'); ?>
 <?= view('shared/header.php', ['id' => 'tokens', 'title' => 'Tokens', 'crumbs' => [['Today', '/'], ['My settings', '/settings/'], ['Tokens', null]]]) ?>
 <div class="main-content" id="tokens-content">
     <?php if ($raw): ?>
@@ -7,10 +7,17 @@
         <code class="user-select-all text-break" id="tokens-minted-value"><?= e($raw['raw']) ?></code>
     </div></div></div>
     <?php endif; ?>
+    <?php if ($rawKey): ?>
+    <div class="row"><div class="col-lg-12"><div class="alert alert-success" id="keys-minted">
+        <div class="fw-bold mb-1">Your new <?= e($rawKey['what']) ?> "<?= e($rawKey['label']) ?>" — copy it now; it is shown once and cannot be shown again.</div>
+        <code class="user-select-all text-break" id="keys-minted-value"><?= e($rawKey['raw']) ?></code>
+        <div class="fs-12 mt-1">Send it as <code>Authorization: Bearer …</code> to <code><?= e($api_url) ?></code>. It acts as you and sees what you see.</div>
+    </div></div></div>
+    <?php endif; ?>
     <div class="row g-3">
         <div class="col-xl-5">
             <div class="card mb-0 h-100" id="tokens-connect"><div class="card-header"><h5 class="card-title mb-0">Connect your AI to Sales CRM</h5></div><div class="card-body fs-12">
-                <p>Your own AI tools (Claude Desktop, Claude Code, an agent of yours) read Sales CRM's two memories with an <strong>mcp</strong> token as a Bearer token. They see exactly what you see — the leads, accounts, contacts, deals and activities you may open; nothing restricted from you. An API key (for a script or an outside system, acting as you, rate-limited) is minted beside these once slice 8 lands.</p>
+                <p>Your own AI tools (Claude Desktop, Claude Code, an agent of yours) read Sales CRM's two memories with an <strong>mcp</strong> token as a Bearer token. They see exactly what you see — the leads, accounts, contacts, deals and activities you may open; nothing restricted from you. An API key (for a script or an outside system; it acts as you and is rate-limited) is minted below.</p>
                 <div class="mb-2"><span class="text-muted">Records:</span> <code id="tokens-url-records" class="text-break"><?= e($base) ?>/mcp/records</code></div>
                 <div class="mb-3"><span class="text-muted">Activity:</span> <code id="tokens-url-activity" class="text-break"><?= e($base) ?>/mcp/activity</code></div>
                 <hr>
@@ -44,4 +51,5 @@
             </div>
         </div>
     </div>
+    <?= view('settings/partials/keys.php', ['keys' => $keys, 'others' => $others, 'limits' => $limits, 'may_raise' => $may_raise, 'tz' => $tz]) ?>
 </div>

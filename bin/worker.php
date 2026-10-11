@@ -12,9 +12,9 @@ declare(strict_types=1);
  * With --passes the named passes run whether or not they are due; without it every pass runs. CRM_WORKER_NOW (ISO 8601) replaces the clock
  * a pass selects by; honoured only when APP_ENV is not prod. Exits 1 when a pass failed.
  *
- * PHASE 0: every pass is a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10):
- * `dispatches`, `proposals` slice 8's (and the notification half of `outbox`); `tombstones_purge`, `key_usage_prune` slice 9's. REAL since slice 2: `imports`, `search_catch_up`;
- * since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`; since slice 5: `mail_poll`, `mail_match`; since slice 6: `smart_lists`, `exports` and the campaign half of `outbox`.
+ * PHASE 0: every pass was a STUB that changes nothing and answers 0 — the slice whose data it touches fills it in (design §10): `tombstones_purge`, `key_usage_prune` are still slice 9's. REAL since slice 2: `imports`,
+ * `search_catch_up`; since slice 4: `reminders`, `recurring_tasks`, `next_step_flags`; since slice 5: `mail_poll`, `mail_match`; since slice 6: `smart_lists`, `exports` and the campaign half of `outbox`; since slice 8: the
+ * notification half of `outbox`, `dispatches` and `proposals`.
  */
 if (PHP_SAPI !== 'cli') { fwrite(STDERR, "CLI only.\n"); exit(1); }
 require_once dirname(__DIR__) . '/app/bootstrap.php';
@@ -340,12 +340,14 @@ function worker_pass_exports(PDO $pdo, int $limit, DateTimeImmutable $now): arra
  * The outbox. THE CAMPAIGN HALF is slice 6's (built): the queued outbound_email rows that carry a campaign_id — and only those — are sent one by one through email_deliver() (the same footer, unsubscribe
  * link and Message-ID as a seller's own send), AS THE SENDER who queued them, at most the pass's limit per run: sent (the member goes from planned to sent), retried (the provider said 429, 502, 503, 504 or
  * could not be reached — still queued, tried again after a minute, four, nine …, five tries in all), failed (a permanent answer, or the tries used up), skipped (the contact opted out since, or the campaign
- * was cancelled — nothing goes). THE OTHER HALF — the notification_outbox rows (email through MaluMail with render_mail(), texts to members through the kernel) — is SLICE 8's: it adds its counts to the
- * same four keys below. A person's own draft is never touched here.
+ * was cancelled — nothing goes). THE OTHER HALF (slice 8) — the notification_outbox rows: an email through MaluMail with render_mail() (the reminder and morning-note bodies, else the plain notice), a text to a member through
+ * the kernel's K6 (`no_sender` and the other refusals are SKIPPED with the code in `detail`) — adds its counts to the same four keys: sent, skipped, retried (a try that will be made again), failed (three attempts used or a permanent
+ * answer); outbox.send|skip|fail are logged per row, never the words. A person's own draft is never touched here.
  */
 function worker_pass_outbox(PDO $pdo, int $limit, DateTimeImmutable $now): array
 {
     require_once dirname(__DIR__) . '/app/features/email/send.php';
+    require_once dirname(__DIR__) . '/app/features/notify/send.php';
     $out = ['sent' => 0, 'skipped' => 0, 'retried' => 0, 'failed' => 0];
     $st = $pdo->prepare("SELECT o.id, o.sender_member_id, o.contact_id, o.campaign_id, c.status AS campaign_status, c.deleted_at AS campaign_deleted
                            FROM outbound_email o LEFT JOIN campaigns c ON c.id = o.campaign_id
@@ -382,13 +384,42 @@ function worker_pass_outbox(PDO $pdo, int $limit, DateTimeImmutable $now): array
             worker_act_as(null);
         }
     }
-    // ---- SLICE 8: the notification_outbox half (email with render_mail(), texts through the kernel) goes here and adds to $out['sent'|'skipped'|'retried'|'failed'] ----
+    // ---- the notification_outbox half (slice 8): email through MaluMail with render_mail(), texts through the kernel's K6; three attempts, a retry after 1 and 4 minutes ----
+    $nst = $pdo->prepare("SELECT id, channel, member_id, to_email::text AS to_email, kind, record_type, record_id, subject, body, attempts FROM notification_outbox
+                           WHERE status = 'queued' AND send_after <= CAST(:at AS timestamptz) ORDER BY send_after, id LIMIT :l");
+    $nst->bindValue('at', $now->format(DATE_ATOM));
+    $nst->bindValue('l', max(1, $limit), PDO::PARAM_INT);
+    $nst->execute();
+    foreach ($nst->fetchAll() as $row) {
+        try {
+            $out[match (outbox_notification_deliver($pdo, $row, $now)) { 'sent' => 'sent', 'skipped' => 'skipped', 'retried' => 'retried', default => 'failed' }]++;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            error_log('worker outbox notification ' . $row['id'] . ': ' . $e->getMessage());
+            $pdo->prepare("UPDATE notification_outbox SET status = 'failed', detail = :d, attempts = attempts + 1 WHERE id = :id AND status = 'queued'")->execute(['d' => 'It could not be sent: ' . db_message($e, 'an error the log names.'), 'id' => $row['id']]);
+            $out['failed']++;
+        }
+    }
     return $out;
 }
-/** SLICE 8 — agent dispatches: a lead to qualify, a deal entering an ask-the-Assistant stage, a reminder for an agent → one chat turn, at most three attempts. */
-function worker_pass_dispatches(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['dispatched' => 0, 'retried' => 0, 'stub' => true]; }
-/** SLICE 8 — the Assistant's standing proposals the worker can make without a model (a possible duplicate found, a deal rotting). */
-function worker_pass_proposals(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['proposed' => 0, 'stub' => true]; }
+/**
+ * Agent dispatches (slice 8; agents/dispatch.php): the rows `sent` — a lead from the website's form to qualify, a deal that entered an ask-the-Assistant stage, a reminder that is an agent's — each become ONE chat turn on the kernel's
+ * chat endpoint as the acting person; the first 200 characters of the reply are kept; three attempts (1 and 4 minutes between), a refusal in words is final, a run still going is asked after on the next pass.
+ */
+function worker_pass_dispatches(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/agents/dispatch.php';
+    return dispatches_run($pdo, $limit, $now);
+}
+/**
+ * The Assistant's standing proposals the worker can make without a model (slice 8; proposals/write.php): a `duplicate` for each new pair crm_duplicates finds — for the manager of the owner's department, never twice for a pair in any
+ * status — and a `rotting` for each deal newly rotting, for its owner, once per deal per stage. Nothing when the Assistant's proposals are switched off.
+ */
+function worker_pass_proposals(PDO $pdo, int $limit, DateTimeImmutable $now): array
+{
+    require_once dirname(__DIR__) . '/app/features/proposals/write.php';
+    return standing_proposals_run($pdo, $limit, $now);
+}
 /** SLICE 9 — tombstoned records older than tombstone_days purged with their children. */
 function worker_pass_tombstones_purge(PDO $pdo, int $limit, DateTimeImmutable $now): array { return ['purged' => 0, 'stub' => true]; }
 /** SLICE 9 — crm_prune_key_usage(): minute buckets older than a day, day buckets older than 35 days. */

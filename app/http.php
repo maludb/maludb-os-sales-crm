@@ -322,8 +322,8 @@ function verify_csrf(): void
     if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
         return;
     }
-    if (is_action_authed()) {
-        return;                     // the signed action token is the CSRF protection
+    if (is_action_authed() || !empty($GLOBALS['__api_token_authed'])) {
+        return;                     // the signed action token, or an API key in the Authorization header (no cookie ever carries it), is the CSRF protection
     }
     $sent = $_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (!hash_equals(csrf_token(), (string) $sent)) {

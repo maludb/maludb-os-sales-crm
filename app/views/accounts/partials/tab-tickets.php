@@ -1,8 +1,10 @@
-<?php /** Tickets: Help Desk's tickets for this company through K7 (helpdesk.tickets_by_organization — slice 8 makes the bridge real). Data: a, tickets ({status, rows}) */ ?>
+<?php /** Tickets: Help Desk's tickets for this company through K7 (helpdesk.tickets_by_organization, cached five minutes; a failing read shows words, never an error). Data: a, tickets ({status, rows}) */ ?>
 <div class="card" id="account-tickets"><div class="card-body">
 <?php if ($tickets['status'] === 'no_connection'): ?>
     <div class="empty-state" id="account-tickets-no-connection"><span class="avatar-text avatar-lg rounded"><i class="feather-life-buoy"></i></span>
         <div><div class="fw-semibold">Help Desk is not connected</div><div class="fs-12 text-muted">When a super-admin connects Help Desk to Sales CRM, this company's support tickets show here.</div></div></div>
+<?php elseif ($tickets['status'] === 'unavailable'): ?>
+    <div class="fs-12 text-muted" id="account-tickets-unavailable"><i class="feather-alert-circle me-1"></i>Help Desk did not answer just now, so this company's tickets are not shown. Try again in a minute.</div>
 <?php elseif ($tickets['rows'] === []): ?>
     <div class="fs-12 text-muted" id="account-tickets-empty">No tickets for this company.</div>
 <?php else: ?>

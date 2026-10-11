@@ -29,6 +29,7 @@ function nav_groups(): array
         'Me' => [
             ['my-settings',   '/settings/',        'feather-settings', 'My settings',   'records.read'],
             ['notifications', '/notifications',    'feather-bell',     'Notifications', 'records.read'],
+            ['proposals',     '/proposals',        'feather-zap',      'Proposals',     'records.read'],
             ['tokens',        '/settings/tokens/', 'feather-key',      'Tokens',        'records.read'],
             ['activity',      '/activity',         'feather-clock',    'My activity',   'records.read'],
         ],

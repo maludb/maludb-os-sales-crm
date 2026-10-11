@@ -95,7 +95,7 @@ echo "4. The worker's passes\n";
 $w = worker('smart_lists,exports,outbox');
 ok(isset($w['ran']['smart_lists']['counted'], $w['ran']['exports']['built'], $w['ran']['outbox']['sent']) && empty($w['ran']['smart_lists']['stub']) && empty($w['ran']['exports']['stub']) && empty($w['ran']['outbox']['stub']) && ($w['errors'] ?? []) === [], 'smart_lists, exports and outbox are real passes: ' . json_encode($w['ran'] ?? $w));
 $w = worker('dispatches,proposals,tombstones_purge,key_usage_prune');
-ok(count(array_filter($w['ran'] ?? [], static fn ($r) => !empty($r['stub']))) === 4, 'the passes of slices 8 and 9 are still stubs');
+ok(count(array_filter($w['ran'] ?? [], static fn ($r) => !empty($r['stub']))) === 2 && empty($w['ran']['dispatches']['stub']) && empty($w['ran']['proposals']['stub']), 'the passes of slice 9 are still stubs (slice 8\'s dispatches and proposals are built)');
 
 echo "5. The registry\n";
 exec('php ' . escapeshellarg(dirname(__DIR__, 3) . '/bin/build_action_registry.php') . ' --check 2>&1', $o, $rc);

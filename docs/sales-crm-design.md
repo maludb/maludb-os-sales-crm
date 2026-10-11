@@ -685,6 +685,12 @@ recommendation, additive: the Help Desk keeps its tables), or stay apart.
 
 ## 16. State
 
+**2026-10-11 — SLICE 8 AGENTS, PROPOSALS, NOTIFICATIONS, K7, THE API AND KEYS BUILT AND PROVEN.** 2 screens and 12 actions; the proposals screen with one-click Accept (a next step becomes the decider's activity, a qualification sets the score, a duplicate sends a manager to the pair), the Assistant's three
+propose doors, notices and the refused `sms_send` (K28), the agents' screen with dispatches and the Assistant's settings; the records API behind a Bearer key (no cookie, no session; the screens' and actions' own code run as the key's person; rates, CORS, `api.call`) and the lead-capture
+route (honeypot, caps, the source the key's); the loopback bridge (`X-CRM-Bridge`) with the five K7 shares (consumer required, nothing restricted, no body) and the two K7 reads this application consumes (cached five minutes, degraded to words); the worker's `outbox` notification half, `dispatches` and
+`proposals` real. db/023: `k7_cache`, and three corrections found here — `crm_key_rotate()` dropped a capture key's source (a rotated capture key became the admin's full key), the accounts share counted restricted deals, the timeline share's next step was the farthest. `tests/phase3/slice8/run.sh`:
+591 checks under php -S and under Apache and the schema proof (173); slices 1–7, Phase 2, Phase 0 and Phase 1 re-run green. The record: `docs/build-specs/agents-k7-api.md` "Built and proven". Next: slice 9, admin, settings and tokens.
+
 **2026-10-11 — SLICE 7 REPORTS, THE FORECAST REPORT AND THE HOME'S TILES BUILT AND PROVEN.** 10 screens and 1 action; nine reports as cards and pages (funnel, win rate, cycle time, sources, campaigns, activity, leaderboard, lost reasons, forecast), each a
 db/015 or db/017 function drawn by the server as inline SVG (bars, the funnel as stacked bars, lines per month; the table beside it is the accessible version), period presets resolved in the member's time zone, `report_export` through slice 6's
 `exports` (a small report at once by POST, a large one built by the worker as the maker). No migration. `tests/phase3/slice7/run.sh`: the checks under php -S and under Apache recorded in the spec; slices 1–6, Phase 2, Phase 0 and Phase 1 re-run green. The record:

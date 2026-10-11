@@ -45,7 +45,7 @@ $next = $summary['next']; $words = ['overdue' => 'Overdue', 'today' => 'Today', 
             <?php if ($ledger['status'] === 'ok' && $ledger['rows'] !== []): $l = $ledger['rows'][0]; ?>
                 <div class="fw-semibold" id="account-ledger-name"><?= e((string) ($l['name'] ?? '')) ?></div><div class="fs-12" id="account-ledger-balance">Balance <?= e(money($l['balance'] ?? 0, $l['currency'] ?? null)) ?></div>
             <?php else: ?>
-                <div class="fs-12 text-muted" id="account-ledger-none"><?= $ledger['status'] === 'no_connection' ? 'The General Ledger is not connected to Sales CRM. When it is, a won deal\'s customer and their balance show here.' : 'Not a customer in the ledger yet.' ?></div>
+                <div class="fs-12 text-muted" id="account-ledger-none"><?= match ($ledger['status']) { 'no_connection' => 'The General Ledger is not connected to Sales CRM. When it is, a won deal\'s customer and their balance show here.', 'unavailable' => 'The General Ledger did not answer just now, so the balance is not shown. Try again in a minute.', default => 'Not a customer in the ledger yet.' } ?></div>
             <?php endif; ?>
         </div></div>
     </div>

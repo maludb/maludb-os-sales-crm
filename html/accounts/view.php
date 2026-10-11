@@ -35,8 +35,8 @@ $data = [
     'a' => $a, 'summary' => $summary, 'tags' => $tags, 'custom' => $custom, 'tab' => $tab, 'tz' => $tz, 'me' => $me,
     'contacts' => account_contacts($pdo, $id), 'deals' => account_deals($pdo, $id), 'activities' => record_activities($pdo, 'account', $id),
     'emails' => record_emails($pdo, 'account', $id), 'notes' => find_notes($pdo, 'account', $id), 'files' => find_attachments($pdo, 'account', $id),
-    'timeline' => timeline($pdo, 'account', $id, 100), 'tickets' => k7_read($pdo, 'helpdesk', 'tickets_by_organization', ['crm_account_id' => $id, 'domain' => $a['domain']]),
-    'ledger' => k7_read($pdo, 'gl', 'customer_by_crm_account', ['crm_account_id' => $id]),
+    'timeline' => timeline($pdo, 'account', $id, 100), 'tickets' => k7_account_read($pdo, 'helpdesk', 'tickets_by_organization', $id, ['domain' => $a['domain']]),
+    'ledger' => k7_account_read($pdo, 'gl', 'customer_by_crm_account', $id),
     'max_mb' => (int) round(attachment_max_bytes($pdo) / 1048576),
     'may' => ['edit' => $editable, 'tag' => $editable && has_right('tags.apply'), 'restrict' => has_right('records.restrict'), 'delete' => $editable, 'note' => has_right('records.read'),
               'manager' => is_manager(), 'contact' => has_right('contacts.write'), 'deal' => has_right('deals.write'), 'log' => has_right('activities.write'), 'email' => has_right('email.send')],
@@ -53,6 +53,6 @@ if (wants_json()) {
         'emails' => array_map(static fn (array $m): array => ['direction' => $m['direction'], 'email_id' => (int) $m['email_id'], 'at' => json_ts($m['at']), 'subject' => $m['subject']], $data['emails']),
         'notes' => array_map(static fn (array $n): array => ['note_id' => (int) $n['note_id'], 'member_id' => $n['member_id'] === null ? null : (int) $n['member_id'], 'body' => $n['body'], 'created_at' => json_ts($n['created_at'])], $data['notes']),
         'files' => array_map(static fn (array $f): array => ['attachment_id' => (int) $f['attachment_id'], 'filename' => $f['filename'], 'mime_type' => $f['mime_type'], 'byte_size' => (int) $f['byte_size'], 'url' => '/attachments/' . (int) $f['attachment_id']], $data['files']),
-        'tickets' => ['status' => $data['tickets']['status'], 'rows' => $data['tickets']['rows']], 'history' => array_map('present_timeline_row', $data['timeline']), 'may' => $data['may']]);
+        'tickets' => ['status' => $data['tickets']['status'], 'rows' => array_map(static fn (array $t): array => array_intersect_key($t, array_flip(['number', 'subject', 'status', 'priority', 'updated_at', 'url'])), array_slice($data['tickets']['rows'], 0, 25))], 'history' => array_map('present_timeline_row', $data['timeline']), 'may' => $data['may']]);
 }
 render_screen($a['name'], view('accounts/view.php', $data), ['activeNav' => 'accounts', 'screen' => 'account-view', 'entity' => 'account', 'recordId' => (string) $id]);

@@ -1,6 +1,6 @@
 {
     "generated_from": "docs/sales-crm-action-manifest.md",
-    "generated_at": "2026-10-11T15:09:46+00:00",
+    "generated_at": "2026-10-11T16:22:53+00:00",
     "screens": {
         "home": {
             "screen": "home",
@@ -780,7 +780,7 @@
                 "status",
                 "who"
             ],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin-agents": {
@@ -789,7 +789,7 @@
             "section": "Agents, proposals, notifications, K7 and the API (slice 8)",
             "when": "the agents working here, their last runs, the morning note's settings, proposals on or off per pipeline, dispatches",
             "params": [],
-            "built": false,
+            "built": true,
             "stub": false
         },
         "admin": {
@@ -1163,7 +1163,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the key",
-            "built": false
+            "built": true
         },
         "key_rotate": {
             "action": "key_rotate",
@@ -1184,7 +1184,7 @@
             "who": "own",
             "agent": false,
             "record_id": "the new key",
-            "built": false
+            "built": true
         },
         "key_revoke": {
             "action": "key_revoke",
@@ -1205,7 +1205,7 @@
             "who": "own or tokens.manage",
             "agent": false,
             "record_id": "the key",
-            "built": false
+            "built": true
         },
         "account_create": {
             "action": "account_create",
@@ -5371,7 +5371,7 @@
             "who": "own (for_member) or deals.any",
             "agent": true,
             "record_id": "the proposal (the activity's id in `result_activity_id`)",
-            "built": false
+            "built": true
         },
         "proposal_dismiss": {
             "action": "proposal_dismiss",
@@ -5392,7 +5392,7 @@
             "who": "own or deals.any",
             "agent": true,
             "record_id": "the proposal",
-            "built": false
+            "built": true
         },
         "next_step_propose": {
             "action": "next_step_propose",
@@ -5443,7 +5443,7 @@
             "who": "activities.write",
             "agent": true,
             "record_id": "the proposal",
-            "built": false
+            "built": true
         },
         "lead_qualify_propose": {
             "action": "lead_qualify_propose",
@@ -5482,7 +5482,7 @@
             "who": "leads.write",
             "agent": true,
             "record_id": "the proposal",
-            "built": false
+            "built": true
         },
         "duplicate_propose": {
             "action": "duplicate_propose",
@@ -5527,7 +5527,7 @@
             "who": "records.read",
             "agent": true,
             "record_id": "the proposal",
-            "built": false
+            "built": true
         },
         "notification": {
             "action": "notification",
@@ -5584,7 +5584,7 @@
             "who": "activities.write (an agent or a manager)",
             "agent": true,
             "record_id": "the notification",
-            "built": false
+            "built": true
         },
         "sms_send": {
             "action": "sms_send",
@@ -5611,7 +5611,7 @@
             "who": "email.send and see on the contact",
             "agent": true,
             "record_id": "the contact",
-            "built": false
+            "built": true
         },
         "dispatch_cancel": {
             "action": "dispatch_cancel",
@@ -5632,7 +5632,7 @@
             "who": "agents.settings",
             "agent": false,
             "record_id": "the dispatch",
-            "built": false
+            "built": true
         },
         "agents_settings_save": {
             "action": "agents_settings_save",
@@ -5683,7 +5683,7 @@
             "who": "agents.settings",
             "agent": false,
             "record_id": "the settings",
-            "built": false
+            "built": true
         },
         "pipeline_save": {
             "action": "pipeline_save",

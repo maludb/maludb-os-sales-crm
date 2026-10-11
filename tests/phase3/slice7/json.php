@@ -73,7 +73,7 @@ $mine = ['reports', 'report-funnel', 'report-win-rate', 'report-cycle-time', 're
 ok(array_filter($mine, static fn ($s) => empty($reg['screens'][$s]['built'])) === [], 'the 10 screens read as built');
 $built = count(array_filter($reg['screens'], static fn ($s) => !empty($s['built'])));
 $actions = count(array_filter($reg['actions'], static fn ($s) => !empty($s['built'])));
-ok($built === 67 && $actions === 90, "the registry reads $built screens and $actions actions built (57 + 10, 89 + 1)");
+ok($built >= 67 && $actions >= 90, "the registry reads $built screens and $actions actions built (at least this slice's 67 + 90; slice 8 adds 2 and 12)");
 $a = $reg['actions']['report_export'] ?? [];
 ok(!empty($a['built']) && ($a['endpoint'] ?? '') === '/reports/export.php' && empty($a['approval']) && empty($a['people_only']) && ($a['agent'] ?? true) !== false, 'report_export: built, at /reports/export.php, open to an agent, nothing paused: ' . json_encode(array_intersect_key($a, array_flip(['endpoint', 'approval', 'agent', 'confirm']))));
 $os = json_decode((string) file_get_contents(dirname(__DIR__, 3) . '/maludb-os.json'), true);

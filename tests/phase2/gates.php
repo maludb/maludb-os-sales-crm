@@ -96,7 +96,7 @@ ok(array_diff($shellActions, $builtActions) === [] && ($isStub('/settings/tokens
 echo "3. The menu and the tab bar per role, and no session\n";
 $menu = static fn (string $j): array => (preg_match_all('/id="nav-([a-z-]+)"/', page($j, '/')['body'], $m) ? array_values(array_filter($m[1], static fn ($i) => $i !== 'leads-inbox')) : []);
 $groups = static fn (string $j): array => (preg_match_all('/nxl-caption"><label>([^<]+)</', page($j, '/')['body'], $m) ? $m[1] : []);
-$full = ['home', 'leads', 'accounts', 'contacts', 'pipeline', 'calendar', 'activities', 'email', 'campaigns', 'lists', 'reports', 'my-settings', 'notifications', 'tokens', 'activity'];
+$full = ['home', 'leads', 'accounts', 'contacts', 'pipeline', 'calendar', 'activities', 'email', 'campaigns', 'lists', 'reports', 'my-settings', 'notifications', 'proposals', 'tokens', 'activity'];
 ok($menu($who['rep']) === $full && $groups($who['rep']) === ['Me'], 'a Rep sees the eleven items and Me — no Admin: ' . implode(', ', $menu($who['rep'])));
 ok($menu($who['viewer']) === array_values(array_diff($full, ['email', 'lists'])), 'a Viewer sees no Email and no Lists');
 ok($menu($who['manager']) === array_merge($full, ['admin']) && $groups($who['manager']) === ['Me', 'Admin'], 'a Sales Manager sees Admin (pipelines, rules, quotas are theirs)');

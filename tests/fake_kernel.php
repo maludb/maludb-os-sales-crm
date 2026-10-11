@@ -10,6 +10,9 @@
  *                                         every request is appended to "<state file>.ledger" (the period asked, or "list")
  *   POST /api/v1/notify/sms.php         → K6, as state.sms says (mode = ok | no_sender | not_held | no_verified_phone | opted_out | rate_limited | server_error);
  *                                         every request body is appended to "<state file>.sms" (one JSON line each)
+ *   POST /api/v1/apps/read.php          → K7, a sibling's shared tool: state.reads["<provider>.<tool>"] = {mode: ok | no_connection | not_shared | provider_failed | down, result}; no entry = a connection no
+ *                                         super-admin approved (403 no_connection); every request {provider, tool, arguments} is appended to "<state file>.reads" (one JSON line each)
+ *   GET  /api/v1/agents/chat.php?run=   → a long run's state: state.chat_runs[<run>] (the same document as a turn), else 404; state.chat_mode = running answers a POST 202 with run 77
  *   GET  /api/v1/apps/mine.php          → K31, the switcher's feed: state.apps (an os.my-applications/1 document) for the acting member, else 404 (no kernel to ask);
  *                                         the acting member is appended to "<state file>.apps"
  * Every call needs Authorization: Bearer $OS_APPLICATION_TOKEN (else 401), like the real one. Never a real kernel.
@@ -55,12 +58,30 @@ switch ($path) {
         file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.apps', ($_SERVER['HTTP_X_ACTING_MEMBER'] ?? '') . "\n", FILE_APPEND);
         if (!isset($state['apps'])) { $out(['error' => ['code' => 'not_found', 'message' => 'No such internal endpoint.']], 404); }
         $out(['data' => $state['apps']]);
+    case '/api/v1/apps/read.php':
+        $reads = $state['reads'] ?? [];
+        $name = ($input['provider'] ?? '') . '.' . ($input['tool'] ?? '');
+        file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.reads', json_encode(['provider' => $input['provider'] ?? null, 'tool' => $input['tool'] ?? null, 'arguments' => $input['arguments'] ?? null]) . "\n", FILE_APPEND);
+        $read = $reads[$name] ?? ['mode' => 'no_connection'];
+        switch ($read['mode'] ?? 'ok') {
+            case 'ok':              $out(['result' => $read['result'] ?? [], 'provider' => $input['provider'] ?? null, 'tool' => $input['tool'] ?? null]);
+            case 'no_connection':   $out(['error' => ['code' => 'no_connection', 'message' => 'No connection between these applications has been approved.']], 403);
+            case 'not_shared':      $out(['error' => ['code' => 'not_shared', 'message' => 'That tool is not shared.']], 403);
+            case 'provider_failed': $out(['error' => ['code' => 'provider_failed', 'message' => 'The provider failed.']], 502);
+            default:                $out(['error' => ['code' => 'unavailable', 'message' => 'The kernel is busy.']], 503);
+        }
     case '/api/v1/agents/chat.php':
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET') {
+            file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.chat', json_encode(['run' => $_GET['run'] ?? null, 'acting' => null, 'utterance' => null]) . "\n", FILE_APPEND);
+            if (!isset($state['chat_runs'][$_GET['run'] ?? ''])) { $out(['error' => ['code' => 'not_found', 'message' => 'No chat run by that id for this application.']], 404); }
+            $out($state['chat_runs'][$_GET['run']]);
+        }
         file_put_contents((string) getenv('FAKE_KERNEL_STATE') . '.chat', json_encode(['agent' => $_GET['agent'] ?? null, 'acting' => $_SERVER['HTTP_X_ACTING_MEMBER'] ?? null, 'utterance' => $input['utterance'] ?? null]) . "\n", FILE_APPEND);
         if (isset($state['chat_status'])) {
             $messages = [403 => 'This person may not use the expert.', 404 => 'No expert for this application.', 409 => 'The expert is busy with another turn.'];
             $out(['error' => ['code' => 'refused', 'message' => $state['chat_message'] ?? ($messages[(int) $state['chat_status']] ?? 'Refused.')]], (int) $state['chat_status']);
         }
+        if (($state['chat_mode'] ?? '') === 'running') { $out(['run_id' => 77, 'status' => 'running', 'finished' => false, 'reply' => null, 'actions' => []], 202); }
         $out(($state['chat'] ?? ['run_id' => 1, 'status' => 'succeeded', 'finished' => true, 'reply' => 'Hello from the fake expert', 'actions' => []])
             + ['seen_acting_member' => $_SERVER['HTTP_X_ACTING_MEMBER'] ?? null, 'seen_agent' => $_GET['agent'] ?? null, 'seen_utterance' => $input['utterance'] ?? null]);
 }

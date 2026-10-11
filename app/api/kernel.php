@@ -129,14 +129,112 @@ function kernel_read(PDO $pdo, string $provider, string $tool, array $arguments)
     return ['status' => $status, 'result' => $result, 'error' => $code];
 }
 
+/** A cache lifetime per outcome: an answer five minutes (the design's), a refusal as long, a failing provider only half a minute so a recovery shows quickly and a down kernel is not asked on every page view. */
+const K7_CACHE_SECONDS = ['ok' => 300, 'no_connection' => 300, 'unavailable' => 30];
+
+/** The cache key of one read: the arguments with their keys sorted, hashed. */
+function k7_args_hash(array $arguments): string
+{
+    $sort = static function (array $a) use (&$sort): array {
+        foreach ($a as $k => $v) { if (is_array($v)) { $a[$k] = $sort($v); } }
+        if (!array_is_list($a)) { ksort($a); }
+        return $a;
+    };
+    return hash('sha256', json_encode($sort($arguments), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION));
+}
+
 /**
- * A sibling's shared tool as the screens read it: ['status' => ok | no_connection | unavailable, 'rows' => [...]]. SLICE 1 STUB (accounts-contacts.md,
- * divergence 3): it answers `no_connection` without asking the kernel, so the Tickets tab and the ledger panel render their empty state; slice 8
- * (agents-k7-api.md) makes it real — kernel_read() under a five-minute cache, a refusal degrading to no_connection, the records server through the bridge.
+ * A sibling's shared tool as the screens read it: ['status' => ok | no_connection | unavailable, 'rows' => [...], 'cached' => bool]. Version 1 declares four `reads[]`
+ * (design §14); the kernel calls the provider only over a connection a super-admin approved. Cached five minutes per provider, tool and arguments (k7_cache, db/023) — the
+ * arguments name the account, so it is per account and per read — and DEGRADED, never raised: a refused connection (403 no_connection / not_shared) is `no_connection`; the
+ * kernel not answering, a provider failing (502), a bad shape or a token missing is `unavailable`. The caller has already decided that the person may ask about the record
+ * (the wall) — use k7_account_read() for an account. Logs `k7.read` ({app, tool, outcome, ms}, never the answer); a cache hit logs nothing and calls nothing.
  */
 function k7_read(PDO $pdo, string $provider, string $tool, array $arguments): array
 {
-    return ['status' => 'no_connection', 'rows' => []];
+    if (!preg_match('/^[a-z][a-z0-9_]{1,31}$/', $provider) || !preg_match('/^[a-z][a-z0-9_]{0,63}$/', $tool)) {
+        return ['status' => 'unavailable', 'rows' => [], 'cached' => false];
+    }
+    $hash = k7_args_hash($arguments);
+    $hit = one_row($pdo, 'SELECT status, rows::text AS rows, extract(epoch FROM now() - fetched_at) AS age FROM k7_cache WHERE provider = :p AND tool = :t AND args_hash = :h',
+        ['p' => $provider, 't' => $tool, 'h' => $hash]);
+    if ($hit !== null && (float) $hit['age'] < (K7_CACHE_SECONDS[$hit['status']] ?? 0)) {
+        return ['status' => $hit['status'], 'rows' => json_decode((string) $hit['rows'], true) ?: [], 'cached' => true];
+    }
+    $t0 = microtime(true);
+    $r = kernel_read($pdo, $provider, $tool, $arguments);
+    $status = match (true) {
+        $r['status'] === 200 && is_array($r['result']) => 'ok',
+        $r['status'] === 403 && in_array($r['error'], ['no_connection', 'not_shared'], true) => 'no_connection',
+        default => 'unavailable',
+    };
+    $rows = $status === 'ok' ? kernel_rows($r['result']) : [];
+    try {
+        $pdo->prepare('INSERT INTO k7_cache (provider, tool, args_hash, status, rows, fetched_at) VALUES (:p, :t, :h, :s, CAST(:r AS jsonb), now())
+                       ON CONFLICT (provider, tool, args_hash) DO UPDATE SET status = EXCLUDED.status, rows = EXCLUDED.rows, fetched_at = now()')
+            ->execute(['p' => $provider, 't' => $tool, 'h' => $hash, 's' => $status, 'r' => json_encode($rows, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+        if (random_int(1, 50) === 1) {
+            $pdo->exec("DELETE FROM k7_cache WHERE fetched_at < now() - interval '1 day'");
+        }
+    } catch (Throwable $e) {
+        error_log('k7_cache: ' . $e->getMessage());                      // a cache that cannot be written is a read that is asked again, not an error
+    }
+    log_activity($pdo, 'k7.read', 'share', null, ['after' => ['app' => $provider, 'tool' => $tool, 'outcome' => $status, 'ms' => (int) round((microtime(true) - $t0) * 1000)]]);
+    return ['status' => $status, 'rows' => $rows, 'cached' => false];
+}
+
+/**
+ * A K7 read about ONE account, asked for by the caller: the wall on the account is judged first (mcp_accounts, as the acting member) and a hidden or missing account is
+ * the same ['status' => 'not_found'] — nothing is asked of the kernel for it. $arguments carry what the provider needs beyond the account (a domain); `crm_account_id` is
+ * always sent.
+ */
+function k7_account_read(PDO $pdo, string $provider, string $tool, int $accountId, array $arguments = []): array
+{
+    if (one_value($pdo, 'SELECT 1 FROM mcp_accounts WHERE account_id = :a', ['a' => $accountId]) === null) {
+        return ['status' => 'not_found', 'rows' => [], 'cached' => false];
+    }
+    return k7_read($pdo, $provider, $tool, ['crm_account_id' => $accountId] + $arguments);
+}
+
+/**
+ * ONE turn of an agent on the kernel's chat endpoint as a person (A6): the dispatches pass's call. `wait` is short (the worker must not hold its lock): a run that is still going answers
+ * 202 and is asked after again by kernel_chat_run(). Answers ['http' => status|0, 'run_id', 'status', 'finished', 'reply', 'error', 'approval']; never raises.
+ */
+function kernel_chat_turn(int $actingMember, int $agentMember, string $utterance, array $context = [], int $wait = 25): array
+{
+    $answer = kernel_call('POST', '/api/v1/agents/chat.php?agent=' . $agentMember, [
+        'utterance' => mb_substr($utterance, 0, 3900), 'screen' => (string) ($context['screen'] ?? ''),
+        'context' => ['entity' => (string) ($context['entity'] ?? ''), 'record_id' => $context['record_id'] ?? null, 'application' => app_key()],
+        'conversation_id' => (string) ($context['conversation_id'] ?? ''), 'wait' => $wait,
+    ], ['X-Acting-Member: ' . $actingMember], $wait + 15);
+    return kernel_chat_shape($answer);
+}
+
+/** A chat run asked after (GET ?run=). */
+function kernel_chat_run(int $runId): array
+{
+    return kernel_chat_shape(kernel_call('GET', '/api/v1/agents/chat.php?run=' . $runId, null, [], 20));
+}
+
+function kernel_chat_shape(?array $answer): array
+{
+    $out = ['http' => $answer === null ? 0 : (int) $answer['status'], 'run_id' => null, 'status' => null, 'finished' => false, 'reply' => '', 'error' => null, 'approval' => null];
+    if ($answer === null) {
+        $out['error'] = 'The kernel did not answer.';
+        return $out;
+    }
+    $body = is_array($answer['body'] ?? null) ? $answer['body'] : [];
+    if ($answer['status'] >= 400) {
+        $out['error'] = mb_substr((string) ($body['error']['message'] ?? ('The kernel answered ' . $answer['status'] . '.')), 0, 300);
+        return $out;
+    }
+    $out['run_id'] = isset($body['run_id']) ? (int) $body['run_id'] : null;
+    $out['status'] = isset($body['status']) ? (string) $body['status'] : null;
+    $out['finished'] = !empty($body['finished']);
+    $out['reply'] = (string) ($body['reply'] ?? '');
+    $out['error'] = isset($body['error']) && $body['error'] !== null ? mb_substr((string) $body['error'], 0, 300) : null;
+    $out['approval'] = $body['approval_request_id'] ?? null;
+    return $out;
 }
 
 /** The rows of a provider's answer: the list itself, or its `rows`, `results` or `items`. */

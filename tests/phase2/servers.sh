@@ -23,7 +23,7 @@ case "${1:-}" in
     set -a; . "$ENVF"; set +a
     export FAKE_KERNEL_STATE="$STATE/kernel.json" FAKE_MALUDB_LOG="$STATE/maludb.log" FAKE_MALUMAIL_LOG="$STATE/malumail.log" FAKE_MALUMAIL_STATE="$STATE/malumail.json"
     export FAKE_MALUMAIL_WEBHOOK_SECRET="${MAILBOX_CRM_WEBHOOK_SECRET:-}"        # slice 5: the fake signs the new-mail notices it posts to the application
-    : > "$FAKE_MALUDB_LOG"; : > "$FAKE_MALUMAIL_LOG"; rm -f "$FAKE_MALUMAIL_STATE" "$FAKE_MALUMAIL_LOG.mcp"; rm -f "$FAKE_KERNEL_STATE.chat" "$FAKE_KERNEL_STATE.apps"
+    : > "$FAKE_MALUDB_LOG"; : > "$FAKE_MALUMAIL_LOG"; rm -f "$FAKE_MALUMAIL_STATE" "$FAKE_MALUMAIL_LOG.mcp"; rm -f "$FAKE_KERNEL_STATE.chat" "$FAKE_KERNEL_STATE.apps" "$FAKE_KERNEL_STATE.reads" "$FAKE_KERNEL_STATE.sms"
     php -r '$f=json_decode(file_get_contents($argv[1]),true); file_put_contents($argv[2], json_encode(["feed"=>$f["feed"]]));' "$ROOT/bin/dev_directory.json" "$FAKE_KERNEL_STATE"
     php -S 127.0.0.1:8802 "$ROOT/tests/fake_kernel.php" >"$STATE/kernel.log" 2>&1 & echo $! > "$STATE/kernel.pid"
     php -S 127.0.0.1:8803 "$ROOT/tests/fake_maludb.php" >"$STATE/fake.log" 2>&1 & echo $! > "$STATE/fake.pid"

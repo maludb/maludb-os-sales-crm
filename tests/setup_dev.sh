@@ -60,5 +60,6 @@ MAIL_FROM_NAME="Sales CRM"
 CRM_STORAGE_DIR=$STORE
 CRM_MAX_IMPORT_ROWS=
 MAILBOX_CRM_WEBHOOK_SECRET=dev-mailbox-$(openssl rand -hex 8)
+API_CORS_ORIGINS=https://www.example.invalid,https://shop.example.invalid
 ENV
 echo "scratch database $DB ready; environment in $ENVF"

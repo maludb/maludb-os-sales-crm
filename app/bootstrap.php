@@ -104,7 +104,11 @@ if (PHP_SAPI !== 'cli' && wants_json()) {
     });
 }
 
-if (PHP_SAPI !== 'cli') {
+if (PHP_SAPI !== 'cli' && defined('CRM_API')) {
+    // The token API (app/api/bootstrap.php) has NO session and sets NO cookie: a key is the whole identity. $_SESSION is a plain in-memory array here, so the kit's helpers
+    // (current_member_id(), has_right() …) read the key's person from it for this request alone — nothing is ever stored, nothing sent back.
+    $_SESSION = [];
+} elseif (PHP_SAPI !== 'cli') {
     $isHttps = (($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
