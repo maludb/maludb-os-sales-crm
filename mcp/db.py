@@ -31,11 +31,16 @@ request_is_kernel: contextvars.ContextVar[bool] = contextvars.ContextVar("is_ker
 request_run_id: contextvars.ContextVar[int | None] = contextvars.ContextVar("run_id", default=None)
 # The raw bearer the caller presented (a run token is shown to the kernel's run-facts call).
 request_token: contextvars.ContextVar[str] = contextvars.ContextVar("token", default="")
+# K26 (kernel db/173): on the kernel's K7 call, who is asking — the consuming application's key and its expert agent's member id — from the headers
+# X-OS-Consumer / X-OS-Consumer-Agent, read beside the token; never from the arguments. And the request the kernel is answering (X-Request-Id), when it sends one.
+request_consumer: contextvars.ContextVar[str | None] = contextvars.ContextVar("consumer", default=None)
+request_consumer_agent: contextvars.ContextVar[int | None] = contextvars.ContextVar("consumer_agent", default=None)
+request_kernel_request_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("kernel_request_id", default=None)
 
 
 _ENV_KEYS = ("DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD", "MCP_RECORDS_DB_USER", "MCP_RECORDS_DB_PASSWORD",
              "MCP_ACTIVITY_DB_USER", "MCP_ACTIVITY_DB_PASSWORD", "ACTION_TOKEN_KEY", "ACTIONS_RELAY_KEY", "APP_KEY",
-             "OS_INTERNAL_URL", "OS_APPLICATION_TOKEN", "MALUDB_API_URL", "MALUDB_API_TOKEN", "MCP_RECORDS_PORT", "MCP_ACTIVITY_PORT")
+             "OS_INTERNAL_URL", "OS_APPLICATION_TOKEN", "MALUDB_API_URL", "MALUDB_API_TOKEN", "MCP_RECORDS_PORT", "MCP_ACTIVITY_PORT", "APP_INTERNAL_PORT")
 
 
 def load_env() -> dict[str, str]:
@@ -203,8 +208,8 @@ def to_json(rows) -> str:
     return json.dumps(rows, default=_json_default, ensure_ascii=False)
 
 
-async def fetch_scoped(pool: asyncpg.Pool, sql: str, *params, member_id: int | None = None, role: str | None = None) -> list[dict]:
-    """Run a read query with the RLS request context set from the current member."""
+async def fetch_scoped(pool: asyncpg.Pool, sql: str, *params, member_id: int | None = None, role: str | None = None, timeout_ms: int | None = None) -> list[dict]:
+    """Run a read query with the RLS request context set from the current member (and, when asked, a statement timeout for this transaction alone)."""
     mid = member_id if member_id is not None else request_member_id.get()
     rol = role if role is not None else request_role.get()
     async with pool.acquire() as con:
@@ -213,11 +218,13 @@ async def fetch_scoped(pool: asyncpg.Pool, sql: str, *params, member_id: int | N
                 "SELECT set_config('app.member_id', $1, true), set_config('app.role', $2, true)",
                 "" if mid is None else str(mid), rol or "anon",
             )
+            if timeout_ms:
+                await con.execute(f"SET LOCAL statement_timeout = {int(timeout_ms)}")
             rows = await con.fetch(sql, *params)
             return [dict(r) for r in rows]
 
 
-SEARCH_DENY = ("set_config", "current_setting", "mcp_admit_agent", "mcp_resolve_token", "crm_resolve_key", "crm_rate_ok", "crm_key_rotate", "storage_path", "token_hash", "body_html", "crm_mailbox_secret", "pg_", "dblink", "lo_import", "lo_export")
+SEARCH_DENY = ("set_config", "current_setting", "mcp_admit_agent", "mcp_resolve_token", "crm_resolve_key", "crm_rate_ok", "crm_key_rotate", "storage_path", "token_hash", "body_html", "crm_mailbox_secret", "search_index", "crm_share_", "k7_cache", "mcp_access_tokens", "pg_", "dblink", "lo_import", "lo_export")
 
 
 async def run_search(pool: asyncpg.Pool, sql: str, row_cap: int = 200) -> str:
