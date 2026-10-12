@@ -64,6 +64,8 @@ $drive = [
     ['lead_update', ['lead' => 'SMOKE Initech', 'source' => 'Website'], ptoken(PRIYA)],
     ['lead_convert', ['lead' => 'SMOKE Initech', 'make_deal' => 'no'], ptoken(PRIYA)],
     ['key_mint', ['label' => 'p4 never minted'], ptoken(PRIYA), 'pending_approval'],
+    ['activity_create', ['kind' => 'call', 'subject' => 'p4 Called Dana', 'deal' => 'SMOKE Acme — 20 seats', 'contact' => 'Dana Reyes', 'done' => 'yes', 'outcome' => 'connected'], ptoken(PRIYA)],
+    ['activity_create', ['kind' => 'call', 'subject' => 'p4 Call Dana back', 'deal' => 'SMOKE Acme — 20 seats', 'contact' => 'Dana Reyes', 'due_at' => date('Y-m-d\TH:i', time() + 3 * 86400)], ptoken(PRIYA)],
 ];
 facts(runid(90), EXPERT, agent_grants('expert'));
 facts(runid(91), ASSISTANT, agent_grants('assistant'));
@@ -112,6 +114,10 @@ ok(($d[8]['answer']['status'] ?? '') === 'success' && $d[8]['posts'][0]['fields'
 ok(($d[9]['answer']['status'] ?? '') === 'success' && $d[9]['posts'][0]['fields']['source'] === $rid('source', 'Website'), 'lead_update: the source resolved by name');
 ok(($d[10]['answer']['status'] ?? '') === 'success' && $d[10]['posts'][0]['fields']['lead'] === (string) $w['lead1'], 'lead_convert: the lead resolved by its company');
 ok(($d[11]['answer']['status'] ?? '') === 'pending_approval', 'key_mint pauses');
+$logged = $d[12]['posts'][0]['fields'] ?? [];
+$next = $d[13]['posts'][0]['fields'] ?? [];
+ok(($d[12]['answer']['status'] ?? '') === 'success' && ($d[13]['answer']['status'] ?? '') === 'success' && $logged['deal'] === (string) $w['deal1'] && $logged['contact'] === (string) $w['dana_c'] && $logged['outcome'] === 'connected' && $next['deal'] === (string) $w['deal1'] && !isset($next['outcome']),
+   'THE COMMAND BAR\'S ONE SENTENCE — "I called Dana about the seats; call her back Friday" — is two unpaused activity_create calls: the call logged as done with its outcome and the next step scheduled, the deal and the contact resolved by name to their ids');
 ok((int) one("SELECT count(*) FROM crm_settings WHERE business_name LIKE 'p4 never%'") === 0 && (int) one("SELECT count(*) FROM mcp_access_tokens WHERE label = 'p4 never minted'") === 0, 'and nothing was written to the application: the handler posts were stubs');
 
 echo "4. maludb-os.json is in step with what the servers offer\n";

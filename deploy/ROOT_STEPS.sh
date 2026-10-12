@@ -42,7 +42,7 @@ echo "   php $KERNEL/bin/app_install.php plan $APP --by <super-admin email> --do
 #    the units, the registration (catalog kind ours — the row K32 seeded, db/177 —, /sso and /sso/logout, scope_kind none),
 #    the application token, skills imported, approval policies, the installing super-admin's admin grant.
 #    --grant-standing-departments gives every standing department the Sales Rep role (key user) — usually NOT wanted for a CRM: grant the
-#    sales department instead. --hire-agents hires the expert and the Sales Assistant. Run it twice: the roles are read from app_roles only once the records MCP answers (Phase 4).
+#    sales department instead. --hire-agents hires the expert and the Sales Assistant. Run it twice: the roles are read from app_roles only once the records MCP answers (built in Phase 4: mcp/records_server.py, started by the installer's units).
 echo "== 2. apply (ROOT) — from Phase 2"
 echo "   sudo php $KERNEL/bin/app_install.php apply $APP --by <super-admin email> --domain subello.com --grant-standing-departments --hire-agents"
 

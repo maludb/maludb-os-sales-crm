@@ -38,6 +38,8 @@ elsewhere. Routes: `GET /api/v1/{leads,accounts,contacts,deals,activities}` (= t
 Ops: `k7_read` (the two reads as the member — the wall on the account checked first), `share_accounts_index`, `share_contacts_index`, `share_deals_won`, `share_deals_open_by_account`,
 `share_account_timeline_summary` (the db/017 functions as the application with the consumer's key; `share.read` logged), `notify` (the records server never writes; an agent's `notification`
 action goes through the Actions MCP — the bridge's `notify` is for the worker's dispatch replies). Any other op 404.
+**Phase 4 (2026-10-12) wired the Python side** (`mcp/crm_bridge.py`): the records server signs each call as above — for a share the consumer and its agent are the headers the kernel set (K26), for `k7_read` the caller is the
+member behind the token or the run (with the door and `is_eval` from the kernel's run-facts); `bridge_unavailable` (retry) is the answer to an unreachable bridge or a signature PHP refuses. `notify` is not called by any tool.
 
 ## The worker (`bin/worker.php`'s real passes)
 `outbox`: queued `notification_outbox` rows → email through `malumail_send()` (the kind's body view), texts through the kernel's `POST /api/v1/notify/sms.php` (K6; `no_sender` → skipped with
