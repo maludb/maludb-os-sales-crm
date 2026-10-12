@@ -66,7 +66,8 @@ class FindDepartmentsIn(ListIn):
 
 
 class FindKeysIn(_Base):
-    mine: bool = Field(True, description="true (the default): only my own keys; false: every key — needs the right to manage tokens")
+    q: str | None = Field(None, max_length=100, description="Words in the key's label (alone, also resolves one key by its label)")
+    mine: bool | None = Field(None, description="true (the default): only my own keys; false: every key — needs the right to manage tokens")
     scope: str | None = Field(None, max_length=20, description="mcp or api")
     limit: int = Field(25, ge=1, le=100, description="How many keys at most")
 
@@ -277,14 +278,20 @@ def register(mcp, q, bridge=None) -> None:
     async def find_keys(params: FindKeysIn) -> str:
         """The keys and tokens: mine (the default), or every one with the right to manage tokens — label, scope, rate limits, the lead source of a capture key, calls today, created, last used, expiry and revocation. Never the key itself."""
         w = Where()
-        if params.mine:
+        manage = await has_right(q, "tokens.manage")
+        mine = params.mine if params.mine is not None else not (resolving(params) and manage)
+        if params.q:
+            w.add("label ILIKE {}", like(params.q))
+        if mine:
             w.add("member_id = {}", await me(q))
-        elif not await has_right(q, "tokens.manage"):
+        elif not manage:
             raise managers_only("Every key (it needs the right to manage tokens)")
         if params.scope:
             w.add("scope = {}", params.scope)
         rows, total = await page(q, f"SELECT key_id, member_id, label, scope, rate_per_minute, rate_per_day, lead_source_id, calls_today, created_at, last_used_at, expires_at, revoked_at FROM mcp_tokens WHERE {w.sql()}", w.args,
                                  lim(params.limit), 0, "ORDER BY created_at DESC, key_id DESC")
+        if resolving(params):
+            rows = exact_first(rows, params.q, "label")
         return listing(rows, params.limit, total)
 
     @mcp.tool(name="key_usage_summary", annotations={"title": "How much each key was used", **RO})

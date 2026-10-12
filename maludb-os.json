@@ -330,7 +330,6 @@
           "account_deals",
           "find_contacts",
           "get_contact",
-          "contact_emails",
           "find_deals",
           "get_deal",
           "deal_history",
@@ -353,7 +352,6 @@
           "my_activities",
           "calendar",
           "activity_summary",
-          "reminders_due",
           "upcoming_dates",
           "accounts_untouched",
           "contacts_untouched",
@@ -384,15 +382,24 @@
           "find_departments",
           "settings_catalogue",
           "timeline",
-          "record_history",
           "search",
-          "touches_to_win"
+          "cycle_time",
+          "my_notifications",
+          "get_settings",
+          "tombstones",
+          "quotas",
+          "deals_closed",
+          "products_pipeline",
+          "members_with_roles",
+          "account_tickets"
         ],
         "Activity MCP": [
           "record_history",
           "recent_activity",
           "actor_history",
-          "activity_search"
+          "activity_search",
+          "activity_timeline",
+          "agent_activity"
         ],
         "Actions MCP": [
           "lead_create",
@@ -497,7 +504,7 @@
           "find_members",
           "find_departments",
           "timeline",
-          "touches_to_win"
+          "cycle_time"
         ],
         "Activity MCP": [
           "record_history",

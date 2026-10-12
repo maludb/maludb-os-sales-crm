@@ -156,4 +156,17 @@ $d = mcp_tool(REC, ptoken(PRIYA), 'get_deal', ['deal' => 'No Such Deal Anywhere'
 ok($c['code'] === 'not_found' && $d['code'] === 'not_found' && ($c['data']['error']['retry'] ?? null) === false, 'a missing record, by id or by name: not_found, retry false');
 $c = mcp_tool(REC, ptoken(PRIYA), 'get_deal', ['deal' => 'p4']);
 ok($c['code'] === 'ambiguous' && count($c['data']['error']['candidates'] ?? []) >= 2 && count($c['data']['error']['candidates']) <= 6 && isset($c['data']['error']['candidates'][0]['id'], $c['data']['error']['candidates'][0]['label']), 'a name that matches several: ambiguous with at most six candidates (id and label)');
+if (getenv('CRM_APP') === 'apache') {
+    echo "7. Through the vhost's own lines (Apache)\n";
+    $viaRec = mcp_tools(8801, ptoken(PRIYA), [], '/mcp/records');
+    $viaAct = mcp_tools(8801, ptoken(PRIYA), [], '/mcp/activity');
+    ok($viaRec === $S['person'] && $viaAct === $S['activity'], '/mcp/records and /mcp/activity on the public name list the same tools as the servers\' own ports');
+    ok(mcp_tools(8801, '', [], '/mcp/records') === null && mcp_tools(8801, api_token(PRIYA), [], '/mcp/records') === null, 'and refuse the same callers (no token, a key) — the vhost adds no door');
+    $c = mcp_tool(8801, kernel_token(), 'accounts_index', [], true, ['X-OS-Consumer: gl'], '/mcp/records');
+    ok(!$c['error'] && ($c['data']['schema'] ?? '') === 'os.sales-crm-accounts/1', 'the kernel\'s token and the consumer header cross the proxy: a share answers (and the bridge is the internal port, not the public name)');
+    $br = req('POST', '/internal/bridge.php', ['raw' => '{}', 'headers' => ['Content-Type: application/json']]);
+    ok($br['code'] === 404, 'the public name answers 404 under /internal/ — the bridge is not on it');
+    $c = mcp_tool(8801, ptoken(PRIYA), 'find_deals', ['status' => ['open']], false, [], '/mcp/records');
+    ok(!$c['error'] && count($c['data']['rows'] ?? []) >= 1, 'a tool call as a person through the vhost');
+}
 finish();
